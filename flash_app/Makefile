@@ -6,16 +6,12 @@ COMPILE_DEPENDENCIES = project.ts chips.ts webpack.config.js
 compile: $(COMPILE_DEPENDENCIES)
 	@tsc -p tsconfig.json;
 	@npx webpack;
-	
 
+run:
+	@npm run dev;
 
-run_project:
-	@node ../build/project.js;
-
-
-run_chips:
-	@node ../build/chips.js;
-
+build:
+	@npm run build;
 
 install:
 	@echo "Install Dependencies";
