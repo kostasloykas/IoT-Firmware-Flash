@@ -4,9 +4,11 @@
 </script>
 
 <main>
-	<h1>Hell</h1>
-	<p>
-		Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn
-		how to build Svelte apps.
-	</p>
+	<h1>Hello</h1>
+	<h2>kostas</h2>
 </main>
+
+<body> skaodkas </body>
+
+<style>
+</style>
