@@ -4,7 +4,6 @@ import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
-import css from 'rollup-plugin-css-only';
 import typescript from 'rollup-plugin-typescript2';
 
 
@@ -32,7 +31,7 @@ function serve() {
 }
 
 export default {
-	input: ['src/script.ts'],
+	input: ['scripts/script.ts'],
 	output: {
 		sourcemap: true,
 		format: 'iife',
@@ -48,7 +47,8 @@ export default {
 		}),
 		// we'll extract any component CSS out into
 		// a separate file - better for performance
-		css({ output: 'bundle.css' }),
+
+		// css({ output: 'bundle.css' }),
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
@@ -74,6 +74,8 @@ export default {
 		// instead of npm run dev), minify
 		production && terser(),
 
+		//  We need to configure Rollup to handle non-JavaScript files,
+		//  such as TypeScript files, using appropriate plugins.
 		typescript()
 	],
 	watch: {
