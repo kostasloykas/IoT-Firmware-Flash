@@ -23,6 +23,6 @@ install:
 
 push: .gitignore
 	@git add . ;
-	@git commit -m "";
+	@git commit -m "update app";
 	@git push;
 
