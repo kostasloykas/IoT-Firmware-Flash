@@ -1,7 +1,7 @@
 
 /* project.ts */
 
-import * as chips from './chips.js';
+import * as chips from './chips';
 
 
 // ====================== ON LOAD OF PAGE ==================
