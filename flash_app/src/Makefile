@@ -15,3 +15,14 @@ run_project:
 
 run_chips:
 	@node ../build/chips.js;
+
+
+install:
+	@echo "Install Dependencies";
+
+
+push: .gitignore
+	@git add . ;
+	@git commit -m "";
+	@git push;
+
