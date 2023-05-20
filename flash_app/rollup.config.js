@@ -33,11 +33,11 @@ function serve() {
 }
 
 export default {
-	input: ['scripts/script.ts'],
+	input: ['./src/main.js'],
 	output: {
 		sourcemap: true,
 		format: 'iife',
-		name: 'firmware',
+		name: 'app',
 		file: 'public/build/bundle.js'
 	},
 	plugins: [
