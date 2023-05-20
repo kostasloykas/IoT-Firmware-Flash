@@ -11,6 +11,7 @@ let image_selected :boolean = false;
 
 // ====================== FUNCTIONS ==================
 function Alert(message:string,type_of_alert:string) {
+    $("#message_div").removeClass(["alert-success","alert-danger"]);
     $("#message_div").addClass("alert-".concat(type_of_alert));
     $("#message_div").html(message).show("fast");
 
@@ -40,7 +41,8 @@ window.addEventListener("load", function () {
     $("#but_device").on("click", async () => {
         // Prompt user to select any serial port.
         const port = await navigator.serial.requestPort();
-        
+
+        // TODO: device_selected = true
        
         //TODO: make instance command interface
     });
@@ -67,13 +69,14 @@ window.addEventListener("load", function () {
     // When image is being uploaded  
     $("#image").on("input", async () => {
 
-        Alert("Image uploaded successfully","success");
-        image_selected = true;
+        if($("#image").val() == ''){
+            image_selected = false;
+            Alert("Image unselected","danger");
+        }else{
+            Alert("Image uploaded successfully","success");
+            image_selected = true;
+        }
 
-
-
-        // TODO: if something went wrong print Error
-        
 
     });
 });
