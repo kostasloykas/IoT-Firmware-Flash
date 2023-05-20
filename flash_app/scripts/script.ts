@@ -1,28 +1,41 @@
 
 /* project.ts */
 
-import * as chips from './chips';
+import * as lib from './library';
+import $, { timers } from 'jquery';
+
 
 // ====================== ON LOAD OF PAGE ==================
-
 window.addEventListener("load", function () {
-    chips.CheckForSerialNavigator();
+
+    // Check if browser support Web Serial Api
+    lib.CheckForSerialNavigator();
     let firmware_file = null;
 
     // ====================== EVENT LISTENERS ==================
-    document
-        .getElementById("but_device")
-        .addEventListener("click", async () => {
-            // Prompt user to select any serial port.
-            const port = await navigator.serial.requestPort();
+    $("#but_device").on("click", async () => {
+        // Prompt user to select any serial port.
+        const port = await navigator.serial.requestPort();
 
-            // make instance command interface
-        });
+        // make instance command interface
+    });
 
-    document.getElementById("image").addEventListener("input", async () => {
-        chips.DEBUG("mpike");
+
+
+    // When image is being uploaded  
+    $("#image").on("input", async () => {
+
+        let message: string = "Image uploaded successfully";
+        $("#message_div").addClass("alert-success");
+        $("#message_div").html(message);
+
+
+
+        // TODO: if something went wrong print Error
+
     });
 });
+
 
 
 

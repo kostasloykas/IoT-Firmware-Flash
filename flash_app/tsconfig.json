@@ -103,7 +103,7 @@
   },
   "include": [
     "./src/*.ts",
-    "scripts/chips.ts",
+    "scripts/library.ts",
     "scripts/script.ts"
   ]
 }
