@@ -2,7 +2,7 @@
 /* project.ts */
 
 import * as lib from './library';
-import $, { timers } from 'jquery';
+import $ from 'jquery';
 
 
 // ====================== ON LOAD OF PAGE ==================
@@ -27,11 +27,16 @@ window.addEventListener("load", function () {
 
         let message: string = "Image uploaded successfully";
         $("#message_div").addClass("alert-success");
-        $("#message_div").html(message);
+        $("#message_div").html(message).show("fast");
+
 
 
 
         // TODO: if something went wrong print Error
+
+        setTimeout(function () {
+            $('#message_div').hide("slow"); // Hide the element after 5 seconds
+        }, 3000);
 
     });
 });
