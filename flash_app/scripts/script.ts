@@ -1,5 +1,5 @@
 
-/* project.ts */
+/* script.ts */
 
 import * as lib from './library';
 import $ from 'jquery';
@@ -10,18 +10,20 @@ let image_selected :boolean = false;
 
 
 // ====================== FUNCTIONS ==================
-function Alert(message:string,type_of_alert:string) {
+
+function Alert(message:string,type_of_alert:string, duration:number = 4000) {
     $("#message_div").removeClass(["alert-success","alert-danger"]);
     $("#message_div").addClass("alert-".concat(type_of_alert));
     $("#message_div").html(message).show("fast");
 
     setTimeout(function () {
         $('#message_div').hide("slow"); // Hide the element after 3 seconds
-    }, 3000);
+    }, duration);
 }
 
 
-function FlashFirmware() {
+// TODO: Flash the firmware image in device
+function FlashFirmware(params:any[]) {
     
 }
 
