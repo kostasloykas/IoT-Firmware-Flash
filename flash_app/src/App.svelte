@@ -15,7 +15,7 @@
 
       <div class="mt-4">
         <button id="but_device" class="btn btn-primary">Select Device</button>
-        <button class=" btn btn-success">Flash firmware</button>
+        <button id="flash_but" class=" btn btn-success">Flash firmware</button>
       </div>
 
       <div id="message_div" class="alert mt-2 w-50 m-auto" style="display:none;" role="alert" />
