@@ -3,9 +3,7 @@
 
 import * as lib from './library';
 import $ from 'jquery';
-import { GetTypeOfDevice } from './library';
 
-let device_selected :boolean = false;
 let image_selected :boolean = false;
 let timeout:any = null;
 
@@ -91,9 +89,8 @@ async function Main(params?:any) {
     try {
         // Prompt user to select any serial port.
         port = await navigator.serial.requestPort();
-        device_selected = true;
     } catch (error) {
-        Alert("Please select the device that you want \
+        Alert("Please select the device in order \
         to flash the firmware","danger");
         return;
     }
