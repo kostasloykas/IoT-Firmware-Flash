@@ -26,12 +26,12 @@ enum SUPPORTED_DEVICES {
 };
 
 type DispatcherCreateInstance = {
-    [key in SUPPORTED_DEVICES]: (...param:any) => CC2538;
+    [key in SUPPORTED_DEVICES]: () => CC2538;
 };
 
 // Dispatcher for creating instances auto of a specific device
 export const CreateInstanceOf:DispatcherCreateInstance = {
-    [SUPPORTED_DEVICES.CC2538] : (port:any) => {return new CC2538(port)}
+    [SUPPORTED_DEVICES.CC2538] : () => {return new CC2538()}
 }
 
 
@@ -149,17 +149,24 @@ export class CC2538 implements Command {
     private port:any;
     private writer:any;
     private reader:any;
+    private Encoder:any;
+    private Decoder:any;
+    private baudrate:number = 9600;
 
-    public constructor(port:any) {
-        PRINT("constructor cc2538");
-        this.port = port;
-        
-    }
-    
+ 
     // TODO: flash firmware
-    Main(){
+    Main(port:any){
+        // Initialize 
+        this.port = port;
+        this.reader = port.readable.getReader();
+        this.writer = port.writable.getWriter();
+        
+        this.Open(port)
+
 
     }
+
+
 
     Open(...params: any): void {
         throw new Error("Method not implemented.");
@@ -246,3 +253,6 @@ export function GetTypeOfDevice(port:any): SUPPORTED_DEVICES {
     assert(type_of_device !== null,"unsupported device");    
     return type_of_device;
 }
+
+
+

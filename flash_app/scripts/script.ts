@@ -2,7 +2,7 @@
 /* script.ts */
 
 import * as lib from './library';
-import $ from 'jquery';
+import $, { error } from 'jquery';
 
 let image_selected :boolean = false;
 let timeout:any = null;
@@ -26,6 +26,7 @@ function Alert(message:string,type_of_alert:string, duration:number = 4000) {
         $('#message_div').hide("fast"); // Hide the element after duration
     }, duration);
 }
+
 
 
 
@@ -69,6 +70,20 @@ window.addEventListener("load", function () {
         image_selected = true;
 
     });
+
+
+    // When device connect
+    navigator.serial.addEventListener('connect', (e:any) => {
+        Alert("Device connected","primary");
+    });
+
+    // When device disconnect
+    navigator.serial.addEventListener('disconnect', (e:any)=> {
+        Alert("Device disconnected","danger");
+        throw new Error("Device disconnected");
+    });
+
+
 });
 
 
@@ -92,8 +107,11 @@ async function Main() {
 
 
     let type_of_device = lib.GetTypeOfDevice(port);
-    let device = lib.CreateInstanceOf[type_of_device](port); // call dispatcher and create the instance
+    let device = lib.CreateInstanceOf[type_of_device](); // call dispatcher and create the instance
     
-    device.Main();
+    device.Main(port);
 
 }
+
+
+
