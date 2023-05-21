@@ -11,6 +11,7 @@ let timeout:any = null;
 
 
 
+
 // ====================== FUNCTIONS ==================
 
 function Alert(message:string,type_of_alert:string, duration:number = 4000) {
