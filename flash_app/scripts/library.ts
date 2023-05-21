@@ -26,12 +26,12 @@ enum SUPPORTED_DEVICES {
 };
 
 type DispatcherCreateInstance = {
-    [key in SUPPORTED_DEVICES]: () => CC2538;
+    [key in SUPPORTED_DEVICES]: (...param:any) => CC2538;
 };
 
 // Dispatcher for creating instances auto of a specific device
 export const CreateInstanceOf:DispatcherCreateInstance = {
-    [SUPPORTED_DEVICES.CC2538] : () => {return new CC2538()}
+    [SUPPORTED_DEVICES.CC2538] : (port:any) => {return new CC2538(port)}
 }
 
 
@@ -146,9 +146,19 @@ export class Packet {
 
 export class CC2538 implements Command {
     private version: VERSION_CC2538;
+    private port:any;
+    private writer:any;
+    private reader:any;
 
-    public constructor() {
-        print("constructor cc2538");
+    public constructor(port:any) {
+        PRINT("constructor cc2538");
+        this.port = port;
+        
+    }
+    
+    // TODO: flash firmware
+    Main(){
+
     }
 
     Open(...params: any): void {
@@ -194,7 +204,7 @@ export class CC2538 implements Command {
 
 // ============================= FUNCTIONS =============================
 
-export function print(...anything: any): void {
+export function PRINT(...anything: any): void {
     console.log(anything);
 }
 

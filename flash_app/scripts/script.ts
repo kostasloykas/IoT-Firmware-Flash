@@ -30,13 +30,6 @@ function Alert(message:string,type_of_alert:string, duration:number = 4000) {
 
 
 
-// TODO: Flash the firmware image in device
-function FlashFirmware(params:any[]) {
-    
-
-
-}
-
 
 
 // ====================== ON LOAD OF PAGE ==================
@@ -68,10 +61,12 @@ window.addEventListener("load", function () {
             return;
         }
 
+        // TODO: create firmware file instance
+
+
+
         Alert("Image uploaded successfully","success");
         image_selected = true;
-
-        // TODO: create firmware file instance
 
     });
 });
@@ -81,15 +76,15 @@ window.addEventListener("load", function () {
 
 // ====================== MAIN ===========================
 
-async function Main(params?:any) {
+async function Main() {
     lib.assert(image_selected === true,"No image has been selected");
-    
     let port:any;
-
+    
     try {
         // Prompt user to select any serial port.
         port = await navigator.serial.requestPort();
     } catch (error) {
+        lib.PRINT(error);
         Alert("Please select the device in order \
         to flash the firmware","danger");
         return;
@@ -97,16 +92,8 @@ async function Main(params?:any) {
 
 
     let type_of_device = lib.GetTypeOfDevice(port);
-    let device = lib.CreateInstanceOf[type_of_device](); // call dispatcher and create the isntance
+    let device = lib.CreateInstanceOf[type_of_device](port); // call dispatcher and create the instance
     
+    device.Main();
 
-
-
-
-
-
-    
-
-
-    // TODO: FlashFirmware();
 }
