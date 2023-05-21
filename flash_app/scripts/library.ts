@@ -1,4 +1,4 @@
-/* chips.ts */
+/* library.ts */
 
 
 
@@ -23,9 +23,7 @@ const NACK = 0x33;
 
 
 enum FILE_EXTENTION {
-    IHEX = ".ihex",
-    HEX = ".hex",
-    RAW_BINARY = ".bin"
+    HEX = ".hex"
 };
 
 enum VERSION_CC2358 {

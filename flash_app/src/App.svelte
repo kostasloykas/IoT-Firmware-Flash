@@ -11,7 +11,7 @@
     <div class=" col-sm-5 text-center border border-success border-3 rounded-3 p-3">
       <span class="h2 fw-bold">Upload file</span>
 
-      <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex , .bin , .ihex" />
+      <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex" />
 
       <div class="mt-4">
         <button id="but_device" class="btn btn-primary">Select Device</button>

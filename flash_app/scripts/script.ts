@@ -21,10 +21,18 @@ function Alert(message:string,type_of_alert:string, duration:number = 4000) {
     }, duration);
 }
 
+function assert(condition: unknown, msg: string): asserts condition {
+    if (condition === false) throw new Error("Assertion: "+msg);
+}
+
 
 // TODO: Flash the firmware image in device
 function FlashFirmware(params:any[]) {
     
+
+
+
+
 }
 
 
@@ -52,13 +60,12 @@ window.addEventListener("load", function () {
 
     // event listener for flash firmware button
     $("#flash_but").on("click", () => {
-        // Prompt user to select any serial port.
 
         if (device_selected){
             if(image_selected){
-                // TODO: FlashFirmware();
+                Main();
             }else{
-                Alert("Image uploaded successfully","danger");
+                Alert("No image has been selected","danger");
             }
         }else{
             Alert("No device has been selected","danger");
@@ -87,4 +94,10 @@ window.addEventListener("load", function () {
 
 
 
+// TODO: Main
+function Main(params?:any) {
+    assert(device_selected === true,"No image has been selected");
+    assert(image_selected === true,"No device has been selected");
 
+    // TODO: FlashFirmware();
+}
