@@ -48,6 +48,53 @@ enum VERSION_CC2538 {
 
 
 
+// ============================= FUNCTIONS =============================
+
+export function PRINT(...anything: any): void {
+    console.log(anything);
+}
+
+export function ERROR(...anything: any): void {
+    console.log("ERROR", anything);
+}
+
+
+export function DEBUG(...anything: any): void {
+    console.log("DEBUG", anything);
+}
+
+
+export function CheckForSerialNavigator(): void {
+    // Web Serial API is not available
+    if (!('serial' in navigator)) {
+        // class="alert alert-danger"
+        alert("Web Serial API is not available")
+        throw new Error("Web Serial API is not available");
+    }
+
+}
+
+// Assertions to ensure that certain conditions or
+// assumptions hold true
+export function assert(condition: unknown, msg: string): asserts condition {
+    if (condition === false) throw new Error("Assertion: "+msg);
+}
+
+
+// TODO: Get chip id from device and return 
+// the type of device with a dummy class instance
+export function GetTypeOfDevice(port:any): SUPPORTED_DEVICES {
+    let type_of_device:SUPPORTED_DEVICES = null;
+
+
+
+
+    assert(type_of_device !== null,"unsupported device");    
+    return type_of_device;
+}
+
+
+
 
 // ============================= INTERFACES =============================
 
@@ -168,7 +215,7 @@ export class CC2538 implements Command {
 
 
 
-    Open(...params: any): void {
+    Open(port:any): void {
         throw new Error("Method not implemented.");
     }
     Close(...params: any): void {
@@ -208,51 +255,6 @@ export class CC2538 implements Command {
 }
 
 
-
-// ============================= FUNCTIONS =============================
-
-export function PRINT(...anything: any): void {
-    console.log(anything);
-}
-
-export function ERROR(...anything: any): void {
-    console.log("ERROR", anything);
-}
-
-
-export function DEBUG(...anything: any): void {
-    console.log("DEBUG", anything);
-}
-
-
-export function CheckForSerialNavigator(): void {
-    // Web Serial API is not available
-    if (!('serial' in navigator)) {
-        // class="alert alert-danger"
-        alert("Web Serial API is not available")
-        throw new Error("Web Serial API is not available");
-    }
-
-}
-
-// Assertions to ensure that certain conditions or
-// assumptions hold true
-export function assert(condition: unknown, msg: string): asserts condition {
-    if (condition === false) throw new Error("Assertion: "+msg);
-}
-
-
-// TODO: Get chip id from device and return 
-// the type of device with a dummy class instance
-export function GetTypeOfDevice(port:any): SUPPORTED_DEVICES {
-    let type_of_device:SUPPORTED_DEVICES = null;
-
-
-
-
-    assert(type_of_device !== null,"unsupported device");    
-    return type_of_device;
-}
 
 
 
