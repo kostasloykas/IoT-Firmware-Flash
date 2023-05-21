@@ -13,12 +13,15 @@ let image_selected :boolean = false;
 // ====================== FUNCTIONS ==================
 
 function Alert(message:string,type_of_alert:string, duration:number = 4000) {
+    let timeout:number;
+    clearTimeout(timeout);
+
     $("#message_div").removeClass(["alert-success","alert-danger"]);
     $("#message_div").addClass("alert-".concat(type_of_alert));
     $("#message_div").html(message).show("fast");
 
-    setTimeout(function () {
-        $('#message_div').hide("slow"); // Hide the element after 3 seconds
+    timeout = setTimeout(function () {
+        $('#message_div').hide("slow"); // Hide the element after duration
     }, duration);
 }
 
@@ -56,17 +59,19 @@ window.addEventListener("load", function () {
 
 
 
-    // When image is being uploaded  
+    // When image is being upload  
     $("#image").on("input", async () => {
 
         if($("#image").val() == ''){
             image_selected = false;
             Alert("Image unselected","danger");
-        }else{
-            Alert("Image uploaded successfully","success");
-            image_selected = true;
+            return;
         }
 
+        Alert("Image uploaded successfully","success");
+        image_selected = true;
+
+        // TODO: create firmware file instance
 
     });
 });
