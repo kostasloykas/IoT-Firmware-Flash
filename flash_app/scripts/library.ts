@@ -21,12 +21,25 @@ enum RESPOND {
 const ACK = 0XCC;
 const NACK = 0x33;
 
+enum SUPPORTED_DEVICES {
+    CC2538
+};
+
+type DispatcherCreateInstance = {
+    [key in SUPPORTED_DEVICES]: () => CC2538;
+};
+
+// Dispatcher for creating instances auto of a specific device
+export const CreateInstanceOf:DispatcherCreateInstance = {
+    [SUPPORTED_DEVICES.CC2538] : () => {return new CC2538()}
+}
+
 
 enum FILE_EXTENTION {
     HEX = ".hex"
 };
 
-enum VERSION_CC2358 {
+enum VERSION_CC2538 {
     _512_KB,
     _256_KB,
     _128_KB
@@ -34,31 +47,6 @@ enum VERSION_CC2358 {
 
 
 
-// ============================= FUNCTIONS =============================
-
-export function print(...anything: any): void {
-    console.log(anything);
-}
-
-export function ERROR(...anything: any): void {
-    console.log("ERROR", anything);
-}
-
-
-export function DEBUG(...anything: any): void {
-    console.log("DEBUG", anything);
-}
-
-
-export function CheckForSerialNavigator(): void {
-    // Web Serial API is not available
-    if (!('serial' in navigator)) {
-        // class="alert alert-danger"
-        alert("Web Serial API is not available")
-        throw new Error("Web Serial API is not available");
-    }
-
-}
 
 
 // ============================= INTERFACES =============================
@@ -156,10 +144,11 @@ export class Packet {
 // ============================= SUPPORTED DEVICES =============================
 
 
-export class CC2358 implements Command {
-    private version: VERSION_CC2358;
+export class CC2538 implements Command {
+    private version: VERSION_CC2538;
 
     public constructor() {
+        print("constructor cc2538");
     }
 
     Open(...params: any): void {
@@ -199,11 +188,51 @@ export class CC2358 implements Command {
 
 
 
-
-
-
-
 }
 
 
 
+// ============================= FUNCTIONS =============================
+
+export function print(...anything: any): void {
+    console.log(anything);
+}
+
+export function ERROR(...anything: any): void {
+    console.log("ERROR", anything);
+}
+
+
+export function DEBUG(...anything: any): void {
+    console.log("DEBUG", anything);
+}
+
+
+export function CheckForSerialNavigator(): void {
+    // Web Serial API is not available
+    if (!('serial' in navigator)) {
+        // class="alert alert-danger"
+        alert("Web Serial API is not available")
+        throw new Error("Web Serial API is not available");
+    }
+
+}
+
+// Assertions to ensure that certain conditions or
+// assumptions hold true
+export function assert(condition: unknown, msg: string): asserts condition {
+    if (condition === false) throw new Error("Assertion: "+msg);
+}
+
+
+// TODO: Get chip id from device and return 
+// the type of device with a dummy class instance
+export function GetTypeOfDevice(port:any): SUPPORTED_DEVICES {
+    let type_of_device:SUPPORTED_DEVICES = null;
+
+
+
+
+    assert(type_of_device !== null,"unsupported device");    
+    return type_of_device;
+}

@@ -14,7 +14,6 @@
       <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex" />
 
       <div class="mt-4">
-        <button id="but_device" class="btn btn-primary">Select Device</button>
         <button id="flash_but" class=" btn btn-success">Flash firmware</button>
       </div>
 
