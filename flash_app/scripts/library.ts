@@ -90,6 +90,7 @@ export function assert(condition: unknown, msg: string): asserts condition {
 export function GetTypeOfDevice(port:any): SUPPORTED_DEVICES {
     let type_of_device:SUPPORTED_DEVICES = null;
 
+    
 
 
 
@@ -105,6 +106,14 @@ export function GetTypeOfDevice(port:any): SUPPORTED_DEVICES {
 
 
 interface Command {
+    port:any;
+    writer:any;
+    reader:any;
+    Encoder:any;
+    Decoder:any;
+    baudrate:number;
+
+
 
     Open(...params: any): void;
     Close(...params: any): void;
@@ -149,7 +158,6 @@ export class FirmwareFile {
 
     // Convert firmware to bytes
     private ConvertFirmwareToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
-
 
         return new Promise<Uint8Array>((resolve,reject)=>{
             const reader = new FileReader();
@@ -211,13 +219,12 @@ export class Packet {
 
 export class CC2538 implements Command {
     private version: VERSION_CC2538;
-    private port:any;
-    private writer:any;
-    private reader:any;
-    private Encoder:any;
-    private Decoder:any;
-    private baudrate:number = 9600;
-
+    port:any;
+    writer:any;
+    reader:any;
+    Encoder:any;
+    Decoder:any;
+    baudrate:number;
  
     // TODO: Flash firmware
     FlashFirmware(port:any,image:FirmwareFile){
