@@ -1,4 +1,5 @@
 <script lang="ts">
+  let fs = require("fs");
   import * as script from "../scripts/script";
 </script>
 

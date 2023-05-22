@@ -1,8 +1,6 @@
 /* library.ts */
 
-import { error } from "jquery";
-
-
+import * as fs from "fs";
 
 declare global {
     interface Navigator {
@@ -38,7 +36,7 @@ export const CreateInstanceOf:DispatcherCreateInstance = {
 
 
 enum FILE_EXTENTION {
-    HEX = ".hex"
+    HEX = "hex"
 };
 
 enum VERSION_CC2538 {
@@ -126,37 +124,41 @@ interface Command {
 
 export class FirmwareFile {
 
-
     private readonly path: string;
-    private file_extention: FILE_EXTENTION;
     private firmware_bytes: Uint8Array;
 
-
-
-
     public constructor(path: string) {
+        assert(path.length > 0, "Path is empty");
+
         this.path = path;
-        this.file_extention = this.CheckFileExtention(path);
-        this.firmware_bytes = this.ConvertFirmwareToBytes(path, this.file_extention);
+        this.CheckFileExtention(path);
+        this.ConvertFirmwareToBytes(path).then(bytes => this.firmware_bytes = bytes);
+        DEBUG(this.firmware_bytes);
     }
 
-    // TODO: Check file extention
-    private CheckFileExtention(path: string): FILE_EXTENTION {
-        let extention = path.split('.').pop();
-        if (!(extention in FILE_EXTENTION)){
-            ERROR("File extention not supported");
-        } 
+    // Check file extention
+    private CheckFileExtention(path: string): void {
+        let extention:string = path.split('.').pop().toUpperCase();
+        if (!(extention in FILE_EXTENTION))
+            ERROR("File extention is not supported");
 
-        return FILE_EXTENTION.HEX;
     }
 
     // TODO: Convert firmware to bytes
-    private ConvertFirmwareToBytes(path: string, file_extention: FILE_EXTENTION): Uint8Array {
-        return new Uint8Array(2);
+    private async ConvertFirmwareToBytes(path: string): Promise<Uint8Array> {
+        assert(path.length > 0, "Path is empty");
+
+        return new Promise<Uint8Array>((resolve, reject) => {
+            // Use fs.readFile() method to read the file
+            fs.readFile(path, 'hex', function(err:any, data:any){
+                  DEBUG(err);
+                  DEBUG(data);
+            });
+          });
     }
 
 
-    /* compute checksum of firmware */
+    /* TODO: compute checksum of firmware */
     public VerifyImage(): boolean {
         return true;
     }

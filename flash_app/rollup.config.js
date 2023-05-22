@@ -6,6 +6,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
 import typescript from 'rollup-plugin-typescript2';
 import css from 'rollup-plugin-css-only';
+import { globals } from 'svelte/internal';
 
 
 
@@ -38,7 +39,7 @@ export default {
 		sourcemap: true,
 		format: 'iife',
 		name: 'app',
-		file: 'public/build/bundle.js'
+		file: 'public/build/bundle.js',
 	},
 	plugins: [
 		svelte({
@@ -78,7 +79,7 @@ export default {
 
 		//  We need to configure Rollup to handle non-JavaScript files,
 		//  such as TypeScript files, using appropriate plugins.
-		typescript()
+		typescript(),
 	],
 	watch: {
 		clearScreen: false
