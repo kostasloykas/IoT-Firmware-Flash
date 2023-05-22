@@ -65,7 +65,8 @@ window.addEventListener("load", function () {
             return;
         }
 
-        image = new FirmwareFile(path);
+        const file = lib.files[0];
+        image = new FirmwareFile(file);
 
         Alert("Image uploaded successfully","success");
         image_selected = true;

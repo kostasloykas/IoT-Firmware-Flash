@@ -7,7 +7,7 @@ declare global {
         serial: any;
     }
 }
-
+export let files:any;
 
 // ============================= VARIABLES =============================
 enum RESPOND {
@@ -132,7 +132,7 @@ export class FirmwareFile {
 
         this.path = path;
         this.CheckFileExtention(path);
-        this.ConvertFirmwareToBytes(path).then(bytes => this.firmware_bytes = bytes);
+        this.ConvertFirmwareToBytes(path);
         DEBUG(this.firmware_bytes);
     }
 
@@ -145,17 +145,22 @@ export class FirmwareFile {
     }
 
     // TODO: Convert firmware to bytes
-    private async ConvertFirmwareToBytes(path: string): Promise<Uint8Array> {
-        assert(path.length > 0, "Path is empty");
+    private ConvertFirmwareToBytes(file: any): void {
+        assert(file !== null, "File is empty");
 
-        return new Promise<Uint8Array>((resolve, reject) => {
-            // Use fs.readFile() method to read the file
-            fs.readFile(path, 'hex', function(err:any, data:any){
-                  DEBUG(err);
-                  DEBUG(data);
-            });
-          });
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            const arrayBuffer:any = e.target.result;
+            const bytes = new Uint8Array(arrayBuffer);
+            DEBUG("Uploading file...");
+        // Use the bytes array as needed
+        console.log(bytes);
+        };
+
+        reader.readAsArrayBuffer(file);
     }
+          
 
 
     /* TODO: compute checksum of firmware */

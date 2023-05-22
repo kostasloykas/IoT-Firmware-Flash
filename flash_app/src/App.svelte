@@ -1,5 +1,8 @@
 <script lang="ts">
-  let fs = require("fs");
+  let files;
+
+  //bind:files enable to access and manipulate
+  //the selected files in your Svelte component.
   import * as script from "../scripts/script";
 </script>
 
@@ -12,7 +15,7 @@
     <div class=" col-sm-5 text-center border border-success border-3 rounded-3 p-3">
       <span class="h2 fw-bold">Upload file</span>
 
-      <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex" />
+      <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex" bind:files />
 
       <div class="mt-4">
         <button id="flash_but" class=" btn btn-success">Flash firmware</button>
