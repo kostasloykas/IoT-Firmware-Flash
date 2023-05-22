@@ -171,11 +171,6 @@ export class FirmwareFile {
     }
           
 
-    /* TODO: compute checksum of firmware */
-    public VerifyImage(): boolean {
-        return true;
-    }
-
 }
 
 
