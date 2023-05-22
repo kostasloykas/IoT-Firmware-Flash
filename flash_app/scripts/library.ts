@@ -1,5 +1,7 @@
 /* library.ts */
 
+import { error } from "jquery";
+
 
 
 declare global {
@@ -55,7 +57,7 @@ export function PRINT(...anything: any): void {
 }
 
 export function ERROR(...anything: any): void {
-    console.log("ERROR", anything);
+    throw new Error("ERROR: " + anything);
 }
 
 
@@ -67,9 +69,8 @@ export function DEBUG(...anything: any): void {
 export function CheckForSerialNavigator(): void {
     // Web Serial API is not available
     if (!('serial' in navigator)) {
-        // class="alert alert-danger"
         alert("Web Serial API is not available")
-        throw new Error("Web Serial API is not available");
+        ERROR("Web Serial API is not available");
     }
 
 }
@@ -135,14 +136,21 @@ export class FirmwareFile {
 
     public constructor(path: string) {
         this.path = path;
-        this.file_extention = this.FindFileExtention(path);
+        this.file_extention = this.CheckFileExtention(path);
         this.firmware_bytes = this.ConvertFirmwareToBytes(path, this.file_extention);
     }
 
-    private FindFileExtention(path: string): FILE_EXTENTION {
+    // TODO: Check file extention
+    private CheckFileExtention(path: string): FILE_EXTENTION {
+        let extention = path.split('.').pop();
+        if (!(extention in FILE_EXTENTION)){
+            ERROR("File extention not supported");
+        } 
+
         return FILE_EXTENTION.HEX;
     }
 
+    // TODO: Convert firmware to bytes
     private ConvertFirmwareToBytes(path: string, file_extention: FILE_EXTENTION): Uint8Array {
         return new Uint8Array(2);
     }
@@ -201,8 +209,8 @@ export class CC2538 implements Command {
     private baudrate:number = 9600;
 
  
-    // TODO: flash firmware
-    Main(port:any){
+    // TODO: Flash firmware
+    FlashFirmware(port:any,image:FirmwareFile){
         // Initialize 
         this.port = port;
         this.reader = port.readable.getReader();

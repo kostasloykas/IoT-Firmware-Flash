@@ -3,9 +3,11 @@
 
 import * as lib from './library';
 import $, { error } from 'jquery';
+import { FirmwareFile } from './library';
 
 let image_selected :boolean = false;
 let timeout:any = null;
+let image:FirmwareFile = null;
 
 
 
@@ -56,15 +58,14 @@ window.addEventListener("load", function () {
     // When image is being upload  
     $("#image").on("input", async () => {
 
-        if($("#image").val() == ''){
+        let path: string = $("#image").val().toString(); 
+        if( path == ''){
             image_selected = false;
             Alert("Image unselected","danger");
             return;
         }
 
-        // TODO: create firmware file instance
-
-
+        image = new FirmwareFile(path);
 
         Alert("Image uploaded successfully","success");
         image_selected = true;
@@ -80,7 +81,7 @@ window.addEventListener("load", function () {
     // When device disconnect
     navigator.serial.addEventListener('disconnect', (e:any)=> {
         Alert("Device disconnected","danger");
-        throw new Error("Device disconnected");
+        lib.ERROR("Device disconnected");
     });
 
 
@@ -93,6 +94,7 @@ window.addEventListener("load", function () {
 
 async function Main() {
     lib.assert(image_selected === true,"No image has been selected");
+    lib.assert(image !== null,"No image has been selected");
     let port:any;
     
     try {
@@ -109,7 +111,8 @@ async function Main() {
     let type_of_device = lib.GetTypeOfDevice(port);
     let device = lib.CreateInstanceOf[type_of_device](); // call dispatcher and create the instance
     
-    device.Main(port);
+    
+    device.FlashFirmware(port,image);
 
 }
 
