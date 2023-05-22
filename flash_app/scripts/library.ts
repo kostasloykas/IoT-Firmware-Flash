@@ -26,12 +26,12 @@ enum RESPOND {
 const ACK = 0XCC;
 const NACK = 0x33;
 
-enum SUPPORTED_DEVICES {
-    CC2538
+export enum SUPPORTED_DEVICES {
+    CC2538 = "CC2538"
 };
 
 type DispatcherCreateInstance = {
-    [key in SUPPORTED_DEVICES]: () => CC2538;
+    [key :string]: () => CC2538;
 };
 
 // Dispatcher for creating instances auto of a specific device
@@ -83,21 +83,6 @@ export function CheckForSerialNavigator(): void {
 export function assert(condition: unknown, msg: string): asserts condition {
     if (condition === false) throw new Error("Assertion: "+msg);
 }
-
-
-// TODO: Get chip id from device and return 
-// the type of device with a dummy class instance
-export function GetTypeOfDevice(port:any): SUPPORTED_DEVICES {
-    let type_of_device:SUPPORTED_DEVICES = null;
-
-    
-
-
-
-    assert(type_of_device !== null,"unsupported device");    
-    return type_of_device;
-}
-
 
 
 
@@ -228,7 +213,7 @@ export class CC2538 implements Command {
  
     // TODO: Flash firmware
     FlashFirmware(port:any,image:FirmwareFile){
-        // Initialize 
+        // Initialize
         this.port = port;
         this.reader = port.readable.getReader();
         this.writer = port.writable.getWriter();

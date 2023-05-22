@@ -5,10 +5,11 @@ import * as lib from './library';
 import $, { error } from 'jquery';
 import { FirmwareFile } from './library';
 
+let device_selected :boolean = false;
 let image_selected :boolean = false;
 let timeout:any = null;
 let image:FirmwareFile = null;
-
+let device_name:string = null;
 
 
 
@@ -46,11 +47,30 @@ window.addEventListener("load", function () {
 
     // event listener for flash firmware button
     $("#flash_but").on("click", () => {
+        if(!device_selected){
+            Alert("No device selected","danger");
+            return;
+        }
+        if(!image_selected){
+            Alert("No image selected","danger");
+            return;
+        }
 
-        if(image_selected)
-            Main();
-        else
-            Alert("No image has been selected","danger");
+        Main();
+    });
+
+    $("#device").on("change", () => {
+        device_name = $("#device").val() as string;
+        lib.PRINT("Device selected: ",device_name);
+
+        if(device_name == "null"){
+            Alert("No device selected","danger");
+            device_selected = false;
+            return;
+        }
+
+        Alert("Device selected " + device_name,"success");
+        device_selected = true;
     });
 
 
@@ -94,7 +114,8 @@ window.addEventListener("load", function () {
 
 async function Main() {
     lib.assert(image_selected === true,"No image has been selected");
-    lib.assert(image !== null,"No image has been selected");
+    lib.assert(device_selected === true,"No device has been selected");
+    lib.assert(device_name in lib.SUPPORTED_DEVICES ,"Device is not supported => " + device_name);
     let port:any;
     
     try {
@@ -108,10 +129,8 @@ async function Main() {
     }
 
 
-    let type_of_device = lib.GetTypeOfDevice(port);
-    let device = lib.CreateInstanceOf[type_of_device](); // call dispatcher and create the instance
-    
-    
+
+    let device = lib.CreateInstanceOf[device_name](); // call dispatcher and create the instance
     device.FlashFirmware(port,image);
 
 }
