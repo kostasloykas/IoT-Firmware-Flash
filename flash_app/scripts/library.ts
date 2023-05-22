@@ -1,15 +1,20 @@
 /* library.ts */
 
+import { rejects } from "assert";
 import * as fs from "fs";
+import { resolve } from "path";
 
 declare global {
     interface Navigator {
         serial: any;
     }
 }
-export let files:any;
 
 // ============================= VARIABLES =============================
+
+
+
+
 enum RESPOND {
     COMMAND_RET_SUCCESS = 0x40,
     COMMAND_RET_UNKNOWN_CMD = 0x41,
@@ -124,44 +129,47 @@ interface Command {
 
 export class FirmwareFile {
 
-    private readonly path: string;
     private firmware_bytes: Uint8Array;
 
-    public constructor(path: string) {
-        assert(path.length > 0, "Path is empty");
+    public constructor(input_element: HTMLInputElement) {
 
-        this.path = path;
-        this.CheckFileExtention(path);
-        this.ConvertFirmwareToBytes(path);
-        DEBUG(this.firmware_bytes);
+        this.CheckFileExtention(input_element.files[0].name);
+        this.ConvertFirmwareToBytes(input_element)
+            .then((bytes) =>{ this.firmware_bytes = bytes; DEBUG(bytes)});
     }
 
     // Check file extention
-    private CheckFileExtention(path: string): void {
-        let extention:string = path.split('.').pop().toUpperCase();
+    private CheckFileExtention(name: string): void {
+        let extention:string = name.split('.').pop().toUpperCase();
+        DEBUG(name);
         if (!(extention in FILE_EXTENTION))
             ERROR("File extention is not supported");
 
     }
 
-    // TODO: Convert firmware to bytes
-    private ConvertFirmwareToBytes(file: any): void {
-        assert(file !== null, "File is empty");
+    // Convert firmware to bytes
+    private ConvertFirmwareToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
 
-        const reader = new FileReader();
 
-        reader.onload = function (e) {
-            const arrayBuffer:any = e.target.result;
-            const bytes = new Uint8Array(arrayBuffer);
-            DEBUG("Uploading file...");
-        // Use the bytes array as needed
-        console.log(bytes);
-        };
+        return new Promise<Uint8Array>((resolve,reject)=>{
+            const reader = new FileReader();
 
-        reader.readAsArrayBuffer(file);
+            reader.onload = function (event) {
+                PRINT("File Uploaded");
+                const result = event.target?.result as ArrayBuffer;
+                const bytes = new Uint8Array(result);
+                resolve(bytes);
+            };
+    
+            reader.onerror = function(event) {
+                reject(new Error('Error reading file.'));
+              };
+    
+            reader.readAsArrayBuffer(input_element.files[0]);
+
+        });
     }
           
-
 
     /* TODO: compute checksum of firmware */
     public VerifyImage(): boolean {

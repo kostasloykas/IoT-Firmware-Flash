@@ -57,16 +57,15 @@ window.addEventListener("load", function () {
 
     // When image is being upload  
     $("#image").on("input", async () => {
-
-        let path: string = $("#image").val().toString(); 
+        let path: string = $("#image").val().toString();
         if( path == ''){
             image_selected = false;
             Alert("Image unselected","danger");
             return;
         }
+        const input_element = document.querySelector('input[type="file"]') as HTMLInputElement;
 
-        const file = lib.files[0];
-        image = new FirmwareFile(file);
+        image = new FirmwareFile(input_element);
 
         Alert("Image uploaded successfully","success");
         image_selected = true;
