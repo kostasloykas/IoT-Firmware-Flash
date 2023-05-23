@@ -36,6 +36,8 @@ window.addEventListener("load", function () {
 
   // event listener for flash firmware button
   $("#flash_but").on("click", () => {
+    let flash_button = $("#flash_but");
+
     if (!device_selected) {
       Alert("No device selected", "danger");
       return;
@@ -45,6 +47,7 @@ window.addEventListener("load", function () {
       return;
     }
 
+    flash_button.prop("disabled", true);
     Main();
   });
 
@@ -102,12 +105,14 @@ async function Main() {
     // Prompt user to select any serial port.
     port = await navigator.serial.requestPort();
   } catch (error) {
-    lib.ERROR(error);
     Alert(
-      "Please select the device in order \
-        to flash the firmware",
+      "Please select the port in order \
+          to flash the firmware",
       "danger"
     );
+    let flash_button = $("#flash_but");
+    flash_button.prop("disabled", false);
+    lib.ERROR(error);
     return;
   }
 

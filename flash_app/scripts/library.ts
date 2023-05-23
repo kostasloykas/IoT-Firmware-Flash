@@ -84,6 +84,7 @@ interface Command {
   Decoder: any;
   filters: object;
 
+  InvokeBootloader(...params: any): void;
   OpenPort(...params: any): void;
   ClosePort(...params: any): void;
   MemoryWrite(...params: any): void;
@@ -99,6 +100,8 @@ interface Command {
   GetStatus(...params: any): void;
   Ping(...params: any): void;
   SendData(...params: any): void;
+  Write(...params: any): void;
+  Read(...params: any): void;
   Reset(...params: any): void;
   Erase(...params: any): void;
   GetChipID(...params: any): void;
@@ -121,7 +124,6 @@ export class FirmwareFile {
   // Check file extention
   private CheckFileExtention(name: string): void {
     let extention: string = name.split(".").pop().toUpperCase();
-    DEBUG(name);
     if (!(extention in FILE_EXTENTION)) ERROR("File extention is not supported");
   }
 
@@ -153,16 +155,41 @@ export class Packet {
 
   constructor(data: Uint8Array) {
     this.data = data;
-    this.size = this.SizeOfPacket(data);
-    this.checksum = this.ComputeChecksum(data);
+    this.size = data.length;
+    this.checksum = this.ComputeChecksum();
   }
 
-  public SizeOfPacket(data: Uint8Array): number {
-    return 0;
+  public ComputeChecksum(): number {
+    const sum: number = this.data.reduce((sum, i) => sum + i);
+    return sum;
   }
 
-  public ComputeChecksum(data: Uint8Array): number {
-    return 0;
+  get Size(): number {
+    return this.size;
+  }
+
+  get Checksum(): number {
+    return this.checksum;
+  }
+
+  get Data(): Uint8Array {
+    return this.data;
+  }
+}
+
+// To encode data before send them to device
+class Encoder {
+  public encode(data: number[]): Uint8Array {
+    const encodedData = new Uint8Array(data);
+    return encodedData;
+  }
+}
+
+// To decode data that send from device
+class Decoder {
+  public decode(data: number[]): Uint8Array {
+    const decodedData = new Uint8Array(data);
+    return decodedData;
   }
 }
 
@@ -190,29 +217,38 @@ export class CC2538 implements Command {
     this.port = port;
     this.reader = port.readable.getReader();
     this.writer = port.writable.getWriter();
+    this.Encoder = new Encoder();
+    this.Decoder = new Decoder();
 
     this.OpenPort(); // Open port
 
+    // this.InvokeBootloader() //Invoke bootloader
+    //   .catch((err) => {
+    //     ERROR("Invoke bootloader problem", err);
+    //   });
+
+    this.SendSync();
     this.ClosePort() // Close port
-      .then((port_closed) => {
-        if (port_closed) PRINT("Port closed");
-      })
       .catch((err) => {
-        ERROR(err);
+        ERROR("Port closed problem", err);
       });
+  }
+
+  async InvokeBootloader() {
+    await this.port.setSignals({ dataTerminalReady: true });
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for some time
+    await this.port.setSignals({ dataTerminalReady: false });
   }
 
   OpenPort(): void {
     this.port.open(this.filters);
     PRINT("Port opened");
   }
-  ClosePort(...params: any): Promise<boolean> {
-    return new Promise<boolean>(async (resolve, reject) => {
-      await this.reader.close();
-      await this.writer.close();
-      await this.port.close();
-      resolve(true);
-    });
+  async ClosePort(...params: any) {
+    await this.reader.close();
+    await this.writer.close();
+    await this.port.close();
+    PRINT("Port closed");
   }
   MemoryWrite(...params: any): void {
     throw new Error("Method not implemented.");
@@ -229,10 +265,24 @@ export class CC2538 implements Command {
   ReceivePacket(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  SendSync(...params: any): void {
-    throw new Error("Method not implemented.");
+
+  SendSync(): void {
+    let data: Uint8Array = this.Encoder.encode([0x55]);
+    this.Write(data).catch((err) => {
+      ERROR("Send Synch", err);
+    });
+    this.Write(data).catch((err) => {
+      ERROR("Send Synch", err);
+    });
+
+    this.WaitForAck();
   }
-  WaitForAck(...params: any): void {
+  //   TODO:
+  WaitForAck() {
+    this.Read(2); // wait for 2 bytes
+    return;
+  }
+  SendData(...params: any): void {
     throw new Error("Method not implemented.");
   }
   CRC32(...params: any): void {
@@ -250,8 +300,40 @@ export class CC2538 implements Command {
   Ping(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  SendData(...params: any): void {
-    throw new Error("Method not implemented.");
+
+  async Write(data: Uint8Array | Packet) {
+    if (data instanceof Uint8Array)
+      if (data.length > 254) {
+        let start: number = 0;
+        let end: number = 0;
+        for (let index = 0; index < data.length; index += 254) {
+          let packet: Packet = new Packet(data.slice(index, index + 254));
+          await this.writer.write(packet);
+          start = index;
+        }
+      } else {
+        await this.writer.write(data);
+      }
+
+    // Allow the serial port to be closed later.
+    this.writer.releaseLock();
+  }
+
+  async Read(length: number, timeout: number = 1000) {
+    const { data, done } = await Promise.race([
+      this.reader.read(length),
+      new Promise<void>((resolve, reject) =>
+        setTimeout(() => reject(new Error("Timeout occurred")), timeout)
+      ),
+    ]);
+
+    if (done) {
+      // Allow the serial port to be closed later.
+      this.reader.releaseLock();
+    }
+    if (data) {
+      DEBUG(this.Decoder.decode(data));
+    }
   }
   Reset(...params: any): void {
     throw new Error("Method not implemented.");
