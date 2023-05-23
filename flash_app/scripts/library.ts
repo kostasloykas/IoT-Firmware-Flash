@@ -80,8 +80,8 @@ interface Command {
   port: any;
   writer: any;
   reader: any;
-  Encoder: any;
-  Decoder: any;
+  encoder: any;
+  decoder: any;
   filters: object;
 
   InvokeBootloader(...params: any): void;
@@ -185,7 +185,7 @@ class Encoder {
   }
 }
 
-// To decode data that send from device
+// TODO: To decode data that send from device
 class Decoder {
   public decode(data: number[]): Uint8Array {
     const decodedData = new Uint8Array(data);
@@ -200,8 +200,8 @@ export class CC2538 implements Command {
   port: any;
   writer: any;
   reader: any;
-  Encoder: any;
-  Decoder: any;
+  encoder: Encoder;
+  decoder: Decoder;
   filters: object = {
     dataBits: 8,
     baudRate: 500000,
@@ -217,8 +217,8 @@ export class CC2538 implements Command {
     this.port = port;
     this.reader = port.readable.getReader();
     this.writer = port.writable.getWriter();
-    this.Encoder = new Encoder();
-    this.Decoder = new Decoder();
+    this.encoder = new Encoder();
+    this.decoder = new Decoder();
 
     this.OpenPort(); // Open port
 
@@ -228,9 +228,12 @@ export class CC2538 implements Command {
     //   });
 
     this.SendSync();
+
+    let chip_id = this.GetChipID();
+
     this.ClosePort() // Close port
       .catch((err) => {
-        ERROR("Port closed problem", err);
+        ERROR("Port can't be closed ", err);
       });
   }
 
@@ -250,53 +253,66 @@ export class CC2538 implements Command {
     await this.port.close();
     PRINT("Port closed");
   }
+  //   TODO:
   MemoryWrite(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   MemoryRead(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   SendAck(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   SendNAck(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   ReceivePacket(...params: any): void {
     throw new Error("Method not implemented.");
   }
 
+  //   TODO:
   SendSync(): void {
-    let data: Uint8Array = this.Encoder.encode([0x55]);
+    let data: Uint8Array = this.encoder.encode([0x55]);
     this.Write(data).catch((err) => {
-      ERROR("Send Synch", err);
+      ERROR("SendSynch", err);
     });
     this.Write(data).catch((err) => {
-      ERROR("Send Synch", err);
+      ERROR("SendSynch", err);
     });
 
-    this.WaitForAck();
+    this.WaitForAck().catch((err) => {
+      ERROR("SendSynch wait for ack", err);
+    });
   }
   //   TODO:
-  WaitForAck() {
-    this.Read(2); // wait for 2 bytes
-    return;
+  WaitForAck(): Promise<void> {
+    return this.Read(2);
   }
+  //   TODO:
   SendData(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   CRC32(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   Download(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   Run(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   GetStatus(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   Ping(...params: any): void {
     throw new Error("Method not implemented.");
   }
@@ -314,9 +330,8 @@ export class CC2538 implements Command {
       } else {
         await this.writer.write(data);
       }
-
-    // Allow the serial port to be closed later.
-    this.writer.releaseLock();
+    else if (data instanceof Packet) {
+    }
   }
 
   async Read(length: number, timeout: number = 1000) {
@@ -332,18 +347,25 @@ export class CC2538 implements Command {
       this.reader.releaseLock();
     }
     if (data) {
-      DEBUG(this.Decoder.decode(data));
+      DEBUG(this.decoder.decode(data));
     }
   }
+  //   TODO:
   Reset(...params: any): void {
     throw new Error("Method not implemented.");
   }
+  //   TODO:
   Erase(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  GetChipID(...params: any): void {
-    throw new Error("Method not implemented.");
+  //   TODO:
+  GetChipID(): void {
+    this.Write(new Uint8Array(0x28)).catch((err) => ERROR("GetChipID", err));
+    this.WaitForAck().catch((err) => ERROR("GetChipID wait for ack", err));
+    this.Read(4).catch((err) => ERROR("GetChipID trying to read chip id from buffer", err)); // read 4 bytes that is chip id
+    return;
   }
+  //   TODO:
   SetXOSC(...params: any): void {
     throw new Error("Method not implemented.");
   }
