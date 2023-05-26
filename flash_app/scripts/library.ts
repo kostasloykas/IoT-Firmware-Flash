@@ -237,7 +237,11 @@ export class CC2538 implements Command {
     PRINT("Synchronized");
     return;
 
+    // this.Ping();
+    // PRINT("Bootloader pinged");
+
     let chip_id = this.GetChipID();
+    return;
 
     this.ClosePort() // Close port
       .catch((err) => {
