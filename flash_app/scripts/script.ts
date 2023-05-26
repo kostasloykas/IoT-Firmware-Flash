@@ -118,4 +118,7 @@ async function Main() {
 
   let device = lib.CreateInstanceOf[device_name](); // call dispatcher and create the instance
   device.FlashFirmware(port, image);
+
+  Alert("The process finished succsfully", "success");
+  return;
 }

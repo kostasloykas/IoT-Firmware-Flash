@@ -2,6 +2,7 @@
 
 import { rejects } from "assert";
 import { resolve } from "path";
+import { NumericLiteral } from "../node_modules/typescript/lib/typescript";
 
 declare global {
   interface Navigator {
@@ -106,6 +107,7 @@ interface Command {
   Erase(...params: any): void;
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
+  ClearInputBuffer(): void;
 }
 
 // ============================= CLASSES =============================
@@ -204,30 +206,34 @@ export class CC2538 implements Command {
   decoder: Decoder;
   filters: object = {
     dataBits: 8,
-    baudRate: 500000,
+    baudRate: 115200, //maximum 460800
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
     bufferSize: 128000000,
   };
+  CHIP_ID: number[] = [0xb964, 0xb965];
 
   // TODO: Flash firmware
   FlashFirmware(port: any, image: FirmwareFile) {
     // Initialize
     this.port = port;
-    this.reader = port.readable.getReader();
-    this.writer = port.writable.getWriter();
     this.encoder = new Encoder();
     this.decoder = new Decoder();
 
     this.OpenPort(); // Open port
+    PRINT("Port opened");
+    return;
 
-    // this.InvokeBootloader() //Invoke bootloader
-    //   .catch((err) => {
-    //     ERROR("Invoke bootloader problem", err);
-    //   });
+    this.InvokeBootloader() //Invoke bootloader
+      .catch((err) => {
+        ERROR("Invoke bootloader problem", err);
+      });
+    PRINT("Bootloader invoked");
 
     this.SendSync();
+    PRINT("Synchronized");
+    return;
 
     let chip_id = this.GetChipID();
 
@@ -245,7 +251,6 @@ export class CC2538 implements Command {
 
   OpenPort(): void {
     this.port.open(this.filters);
-    PRINT("Port opened");
   }
   async ClosePort(...params: any) {
     await this.reader.close();
@@ -261,13 +266,13 @@ export class CC2538 implements Command {
   MemoryRead(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  //   TODO:
   SendAck(...params: any): void {
-    throw new Error("Method not implemented.");
+    let ack: Uint8Array = new Uint8Array([0x00, ACK]);
+    this.Write(ack);
   }
-  //   TODO:
   SendNAck(...params: any): void {
-    throw new Error("Method not implemented.");
+    let nack: Uint8Array = new Uint8Array([0x00, NACK]);
+    this.Write(nack);
   }
   //   TODO:
   ReceivePacket(...params: any): void {
@@ -277,6 +282,8 @@ export class CC2538 implements Command {
   //   TODO:
   SendSync(): void {
     let data: Uint8Array = this.encoder.encode([0x55]);
+    this.ClearInputBuffer();
+
     this.Write(data).catch((err) => {
       ERROR("SendSynch", err);
     });
@@ -285,13 +292,22 @@ export class CC2538 implements Command {
     });
 
     this.WaitForAck().catch((err) => {
-      ERROR("SendSynch wait for ack", err);
+      ERROR("SendSynch", err);
     });
   }
   //   TODO:
   WaitForAck(): Promise<void> {
-    return this.Read(2);
+    let data: Uint8Array = null;
+    this.Read(2).then((array) => (data = array));
+
+    for (let byte of data) {
+      if (byte == ACK) return;
+      else if (byte == NACK) throw Error("Response was NACK");
+    }
+
+    throw Error("Unrecognized response (neither ACK nor NACK)");
   }
+
   //   TODO:
   SendData(...params: any): void {
     throw new Error("Method not implemented.");
@@ -317,7 +333,11 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
+  //   TODO:
   async Write(data: Uint8Array | Packet) {
+    this.writer = this.port.getWriter();
+
+    // if data are bytes
     if (data instanceof Uint8Array)
       if (data.length > 254) {
         let start: number = 0;
@@ -330,11 +350,15 @@ export class CC2538 implements Command {
       } else {
         await this.writer.write(data);
       }
+    // if data is packet
     else if (data instanceof Packet) {
     }
+    this.writer.realeaseLock();
   }
 
-  async Read(length: number, timeout: number = 1000) {
+  //   TODO:
+  async Read(length: number, timeout: number = 1000): Promise<Uint8Array> {
+    this.reader = this.port.getReader();
     const { data, done } = await Promise.race([
       this.reader.read(length),
       new Promise<void>((resolve, reject) =>
@@ -342,13 +366,15 @@ export class CC2538 implements Command {
       ),
     ]);
 
-    if (done) {
-      // Allow the serial port to be closed later.
-      this.reader.releaseLock();
-    }
     if (data) {
       DEBUG(this.decoder.decode(data));
     }
+
+    this.reader.releaseLock();
+    let data_arr: Uint8Array = this.decoder.decode(data);
+
+    //return an array of Uint8Array type
+    return new Promise((resolve, reject) => resolve(data_arr));
   }
   //   TODO:
   Reset(...params: any): void {
@@ -360,13 +386,30 @@ export class CC2538 implements Command {
   }
   //   TODO:
   GetChipID(): void {
-    this.Write(new Uint8Array(0x28)).catch((err) => ERROR("GetChipID", err));
-    this.WaitForAck().catch((err) => ERROR("GetChipID wait for ack", err));
-    this.Read(4).catch((err) => ERROR("GetChipID trying to read chip id from buffer", err)); // read 4 bytes that is chip id
+    this.Write(new Uint8Array([0x28])).catch((err) => ERROR("GetChipID", err));
+    this.WaitForAck().catch((err) => ERROR("GetChipID", err));
+    this.Read(4)
+      .then((array: Uint8Array) => {
+        let chip_id: number = ((array[0] << 8) | array[1]) as number;
+        if (chip_id in this.CHIP_ID) ERROR("Chip Id wasn't the right");
+      })
+      .catch((err) => ERROR("GetChipID trying to read chip id from buffer", err)); // read 4 bytes that is chip id
     return;
   }
   //   TODO:
   SetXOSC(...params: any): void {
     throw new Error("Method not implemented.");
+  }
+
+  async ClearInputBuffer() {
+    const reader = this.port.readable.getReader();
+
+    // Read and discard data until the buffer is empty
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break; // Buffer is empty, exit the loop
+    }
+
+    reader.releaseLock();
   }
 }
