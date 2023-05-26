@@ -151,26 +151,28 @@ export class FirmwareFile {
 }
 
 export class Packet {
-  private size: number;
-  private checksum: number;
+  private size: Uint8Array;
+  private checksum: Uint8Array;
   private data: Uint8Array;
 
   constructor(data: Uint8Array) {
     this.data = data;
-    this.size = data.length;
+    this.size = new Uint8Array([data.length]);
     this.checksum = this.ComputeChecksum();
   }
 
-  public ComputeChecksum(): number {
+  public ComputeChecksum(): Uint8Array {
     const sum: number = this.data.reduce((sum, i) => sum + i);
-    return sum;
+    return new Uint8Array([sum]);
   }
 
-  get Size(): number {
+  get Size(): Uint8Array {
+    assert(this.size.length == 1, "Packet size.length must be 1 byte");
     return this.size;
   }
 
-  get Checksum(): number {
+  get Checksum(): Uint8Array {
+    assert(this.checksum.length == 1, "Packet checksum.length must be 1 byte");
     return this.checksum;
   }
 
@@ -352,6 +354,10 @@ export class CC2538 implements Command {
       }
     // if data is packet
     else if (data instanceof Packet) {
+      let packet = data;
+      this.writer.write(packet.Size);
+      this.writer.write(packet.Checksum);
+      this.writer.write(data.Data);
     }
     this.writer.realeaseLock();
   }
@@ -386,14 +392,19 @@ export class CC2538 implements Command {
   }
   //   TODO:
   GetChipID(): void {
-    this.Write(new Uint8Array([0x28])).catch((err) => ERROR("GetChipID", err));
+    // send the command
+    this.Write(new Packet(new Uint8Array([0x20]))).catch((err) => ERROR("GetChipID", err));
+    // wait for ACK
     this.WaitForAck().catch((err) => ERROR("GetChipID", err));
+    // read 4 bytes that contain chip id
     this.Read(4)
       .then((array: Uint8Array) => {
         let chip_id: number = ((array[0] << 8) | array[1]) as number;
         if (chip_id in this.CHIP_ID) ERROR("Chip Id wasn't the right");
       })
       .catch((err) => ERROR("GetChipID trying to read chip id from buffer", err)); // read 4 bytes that is chip id
+    // send ACK
+    this.SendAck();
     return;
   }
   //   TODO:
