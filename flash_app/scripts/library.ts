@@ -150,7 +150,7 @@ export class FirmwareFile {
   }
 }
 
-export class Packet {
+class Packet {
   private size: Uint8Array;
   private checksum: Uint8Array;
   private data: Uint8Array;
@@ -162,7 +162,7 @@ export class Packet {
   }
 
   public ComputeChecksum(): Uint8Array {
-    const sum: number = this.data.reduce((sum, i) => sum + i);
+    const sum: number = this.data.reduce((sum, i) => sum + i && 0xff);
     return new Uint8Array([sum]);
   }
 
@@ -189,7 +189,7 @@ class Encoder {
   }
 }
 
-// TODO: To decode data that send from device
+// TODO: Decode data that came from device
 class Decoder {
   public decode(data: number[]): Uint8Array {
     const decodedData = new Uint8Array(data);
@@ -214,6 +214,7 @@ export class CC2538 implements Command {
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
     bufferSize: 128000000,
   };
+
   CHIP_ID: number[] = [0xb964, 0xb965];
 
   // TODO: Flash firmware
@@ -222,6 +223,8 @@ export class CC2538 implements Command {
     this.port = port;
     this.encoder = new Encoder();
     this.decoder = new Decoder();
+
+    DEBUG(this.CHIP_ID);
 
     this.OpenPort(); // Open port
     PRINT("Port opened");
