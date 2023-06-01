@@ -3,6 +3,7 @@
 import * as lib from "./library";
 import $, { error } from "jquery";
 import { FirmwareFile } from "./library";
+import { resolve } from "path";
 
 let device_selected: boolean = false;
 let image_selected: boolean = false;
@@ -25,6 +26,11 @@ function Alert(message: string, type_of_alert: string, duration: number = 4000) 
     timeout = null;
     $("#message_div").hide("fast"); // Hide the element after duration
   }, duration);
+}
+
+function ReleaseFlashButton(): void {
+  let flash_button = $("#flash_but");
+  flash_button.prop("disabled", false);
 }
 
 // ====================== ON LOAD OF PAGE ==================
@@ -53,7 +59,7 @@ window.addEventListener("load", function () {
 
   $("#device").on("change", () => {
     device_name = $("#device").val() as string;
-    lib.PRINT("Device selected: ", device_name);
+    lib.PRINT("Device selected: ".concat(device_name));
 
     if (device_name == "null") {
       Alert("No device selected", "danger");
@@ -91,6 +97,14 @@ window.addEventListener("load", function () {
     Alert("Device disconnected", "danger");
     lib.ERROR("Device disconnected");
   });
+
+  //
+  window.addEventListener("unhandledrejection", function (event) {
+    alert(event.reason); // the unhandled error object
+    lib.DEBUG(event.reason);
+    Alert("Flash canceled", "danger");
+    ReleaseFlashButton();
+  });
 });
 
 // ====================== MAIN ===========================
@@ -110,15 +124,14 @@ async function Main() {
           to flash the firmware",
       "danger"
     );
-    let flash_button = $("#flash_but");
-    flash_button.prop("disabled", false);
-    lib.ERROR(error);
+    ReleaseFlashButton();
     return;
   }
 
   let device = lib.CreateInstanceOf[device_name](); // call dispatcher and create the instance
   device.FlashFirmware(port, image);
-
   Alert("The process finished succsfully", "success");
+  ReleaseFlashButton();
+
   return;
 }

@@ -15,8 +15,8 @@
       <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex" />
 
       <select id="device" class="form-select mt-2 m-auto w-50" aria-label="Default select example">
-        <option selected value="null">Device</option>
-        <option value="CC2538">CC2538</option>
+        <option value="null">Device</option>
+        <option selected value="CC2538">CC2538</option>
         <option value="CC26xx">CC26xx</option>
       </select>
 

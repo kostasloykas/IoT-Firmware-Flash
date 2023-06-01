@@ -3,6 +3,7 @@
 import { rejects } from "assert";
 import { resolve } from "path";
 import { NumericLiteral } from "../node_modules/typescript/lib/typescript";
+import { error } from "console";
 
 declare global {
   interface Navigator {
@@ -26,12 +27,12 @@ export enum SUPPORTED_DEVICES {
   CC2538 = "CC2538",
 }
 
-type DispatcherCreateInstance = {
+type CreateInstanceDispatcher = {
   [key: string]: () => CC2538;
 };
 
 // Dispatcher for creating instances auto of a specific device
-export const CreateInstanceOf: DispatcherCreateInstance = {
+export const CreateInstanceOf: CreateInstanceDispatcher = {
   [SUPPORTED_DEVICES.CC2538]: () => {
     return new CC2538();
   },
@@ -54,7 +55,7 @@ export function PRINT(...anything: any): void {
 }
 
 export function ERROR(...anything: any): void {
-  throw new Error("ERROR: " + anything);
+  throw new Error(anything);
 }
 
 export function DEBUG(...anything: any): void {
@@ -189,7 +190,7 @@ class Encoder {
   }
 }
 
-// TODO: Decode data that came from device
+// FIXME: Decode data that came from device
 class Decoder {
   public decode(data: number[]): Uint8Array {
     const decodedData = new Uint8Array(data);
@@ -212,7 +213,6 @@ export class CC2538 implements Command {
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
-    bufferSize: 128000000,
   };
 
   CHIP_ID: number[] = [0xb964, 0xb965];
@@ -224,24 +224,33 @@ export class CC2538 implements Command {
     this.encoder = new Encoder();
     this.decoder = new Decoder();
 
-    DEBUG(this.CHIP_ID);
+    // Open port
+    this.OpenPort()
+      .then(() => {
+        PRINT("Port opened");
+      })
+      .catch((error) => {
+        ERROR("OpenPort:", error);
+      });
 
-    this.OpenPort(); // Open port
-    PRINT("Port opened");
     return;
 
     this.InvokeBootloader() //Invoke bootloader
+      .then(() => {
+        PRINT("Bootloader invoked");
+      })
       .catch((err) => {
         ERROR("Invoke bootloader problem", err);
       });
-    PRINT("Bootloader invoked");
+
+    return;
 
     this.SendSync();
     PRINT("Synchronized");
     return;
 
-    // this.Ping();
-    // PRINT("Bootloader pinged");
+    this.Ping();
+    PRINT("Bootloader pinged");
 
     let chip_id = this.GetChipID();
     return;
@@ -252,14 +261,16 @@ export class CC2538 implements Command {
       });
   }
 
+  // FIXME: invoke bootloader
   async InvokeBootloader() {
     await this.port.setSignals({ dataTerminalReady: true });
     await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for some time
     await this.port.setSignals({ dataTerminalReady: false });
   }
 
-  OpenPort(): void {
-    this.port.open(this.filters);
+  // FIXME: Open port
+  async OpenPort() {
+    await this.port.open(this.filters);
   }
   async ClosePort(...params: any) {
     await this.reader.close();
@@ -275,6 +286,7 @@ export class CC2538 implements Command {
   MemoryRead(...params: any): void {
     throw new Error("Method not implemented.");
   }
+
   SendAck(...params: any): void {
     let ack: Uint8Array = new Uint8Array([0x00, ACK]);
     this.Write(ack);
@@ -288,7 +300,7 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  //   TODO:
+  // FIXME: Send Sync
   SendSync(): void {
     let data: Uint8Array = this.encoder.encode([0x55]);
     this.ClearInputBuffer();
@@ -300,11 +312,13 @@ export class CC2538 implements Command {
       ERROR("SendSynch", err);
     });
 
+    // wait for ack
     this.WaitForAck().catch((err) => {
       ERROR("SendSynch", err);
     });
   }
-  //   TODO:
+
+  // FIXME: Wait for ack
   WaitForAck(): Promise<void> {
     let data: Uint8Array = null;
     this.Read(2).then((array) => (data = array));
@@ -337,12 +351,10 @@ export class CC2538 implements Command {
   GetStatus(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  //   TODO:
-  Ping(...params: any): void {
-    throw new Error("Method not implemented.");
-  }
+  //   FIXME: Ping
+  Ping(): void {}
 
-  //   TODO:
+  // FIXME: Write
   async Write(data: Uint8Array | Packet) {
     this.writer = this.port.getWriter();
 
@@ -369,7 +381,7 @@ export class CC2538 implements Command {
     this.writer.realeaseLock();
   }
 
-  //   TODO:
+  // FIXME: Read
   async Read(length: number, timeout: number = 1000): Promise<Uint8Array> {
     this.reader = this.port.getReader();
     const { data, done } = await Promise.race([
@@ -380,6 +392,7 @@ export class CC2538 implements Command {
     ]);
 
     if (data) {
+      DEBUG("Data came");
       DEBUG(this.decoder.decode(data));
     }
 
@@ -397,7 +410,7 @@ export class CC2538 implements Command {
   Erase(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  //   TODO:
+  // FIXME: Get Chip Id
   GetChipID(): void {
     // send the command
     this.Write(new Packet(new Uint8Array([0x20]))).catch((err) => ERROR("GetChipID", err));
@@ -419,6 +432,7 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
+  // FIXME: Clear Input Buffer
   async ClearInputBuffer() {
     const reader = this.port.readable.getReader();
 
