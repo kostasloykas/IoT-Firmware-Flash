@@ -5,7 +5,8 @@ import $, { error } from "jquery";
 import { FirmwareFile } from "./library";
 import { resolve } from "path";
 
-let device_selected: boolean = false;
+// FIXME: device selected = false
+let device_selected: boolean = true;
 let image_selected: boolean = false;
 let timeout: any = null;
 let image: FirmwareFile = null;

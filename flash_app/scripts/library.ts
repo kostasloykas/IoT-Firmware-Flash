@@ -1,10 +1,5 @@
 /* library.ts */
 
-import { rejects } from "assert";
-import { resolve } from "path";
-import { NumericLiteral } from "../node_modules/typescript/lib/typescript";
-import { error } from "console";
-
 declare global {
   interface Navigator {
     serial: any;
@@ -108,7 +103,8 @@ interface Command {
   Erase(...params: any): void;
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
-  ClearInputBuffer(): void;
+  ClearInputBuffer(...params: any): void;
+  CheckLastCommand(...params: any): void;
 }
 
 // ============================= CLASSES =============================
@@ -225,6 +221,7 @@ export class CC2538 implements Command {
     this.decoder = new Decoder();
 
     // Open port
+    PRINT("Try to open the port");
     this.OpenPort()
       .then(() => {
         PRINT("Port opened");
@@ -235,6 +232,7 @@ export class CC2538 implements Command {
 
     return;
 
+    PRINT("Try to invoke bootloader");
     this.InvokeBootloader() //Invoke bootloader
       .then(() => {
         PRINT("Bootloader invoked");
@@ -245,10 +243,12 @@ export class CC2538 implements Command {
 
     return;
 
+    PRINT("Try to Synch");
     this.SendSync();
     PRINT("Synchronized");
     return;
 
+    PRINT("Try to Ping");
     this.Ping();
     PRINT("Bootloader pinged");
 
@@ -295,9 +295,16 @@ export class CC2538 implements Command {
     let nack: Uint8Array = new Uint8Array([0x00, NACK]);
     this.Write(nack);
   }
-  //   TODO:
-  ReceivePacket(...params: any): void {
-    throw new Error("Method not implemented.");
+  //   FIXME: Receive Packet
+  async ReceivePacket(): Promise<Packet> {
+    const [size, checksum] = await this.Read(2); //read size and checksum
+
+    let data: Uint8Array = new Uint8Array(await this.Read(size - 2));
+    let packet: Packet = new Packet(data);
+
+    if (packet.Checksum !== new Uint8Array([checksum])) ERROR("ReceivePacket: checksum error");
+
+    return packet;
   }
 
   // FIXME: Send Sync
@@ -347,12 +354,45 @@ export class CC2538 implements Command {
   Run(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  //   TODO:
-  GetStatus(...params: any): void {
-    throw new Error("Method not implemented.");
+  //   FIXME:
+  GetStatus(...params: any): RESPOND {
+    let data: Uint8Array = this.encoder.encode([0x23]);
+    let packet: Packet = new Packet(data);
+
+    this.Write(packet).catch((err) => {
+      ERROR("GetStaus:", err);
+    });
+
+    // wait for ack
+    this.WaitForAck().catch((err) => {
+      ERROR("GetStaus:", err);
+    });
+
+    let respond = this.ReceivePacket();
+    // FIXME: respond return
+    return RESPOND.COMMAND_RET_FLASH_FAIL;
   }
   //   FIXME: Ping
-  Ping(): void {}
+  Ping(): void {
+    let data: Uint8Array = this.encoder.encode([0x20]);
+    let packet: Packet = new Packet(data);
+
+    this.Write(packet).catch((err) => {
+      ERROR("Ping:", err);
+    });
+
+    // wait for ack
+    this.WaitForAck().catch((err) => {
+      ERROR("Ping", err);
+    });
+
+    this.CheckLastCommand();
+  }
+
+  // TODO:
+  CheckLastCommand(): void {
+    throw new Error("Method not implemented.");
+  }
 
   // FIXME: Write
   async Write(data: Uint8Array | Packet) {
@@ -382,26 +422,29 @@ export class CC2538 implements Command {
   }
 
   // FIXME: Read
-  async Read(length: number, timeout: number = 1000): Promise<Uint8Array> {
+  async Read(length: number, timeout: number = 400) {
     this.reader = this.port.getReader();
-    const { data, done } = await Promise.race([
+    const { data: value, done } = await Promise.race([
       this.reader.read(length),
       new Promise<void>((resolve, reject) =>
-        setTimeout(() => reject(new Error("Timeout occurred")), timeout)
+        setTimeout(() => {
+          ERROR("Timeout occurred");
+        }, timeout)
       ),
     ]);
 
-    if (data) {
-      DEBUG("Data came");
-      DEBUG(this.decoder.decode(data));
-    }
-
     this.reader.releaseLock();
-    let data_arr: Uint8Array = this.decoder.decode(data);
 
-    //return an array of Uint8Array type
-    return new Promise((resolve, reject) => resolve(data_arr));
+    if (done) return null;
+
+    if (value) {
+      DEBUG("Data read");
+      let data: Uint8Array = this.decoder.decode(value);
+      DEBUG(data);
+      return data;
+    }
   }
+
   //   TODO:
   Reset(...params: any): void {
     throw new Error("Method not implemented.");
@@ -418,11 +461,12 @@ export class CC2538 implements Command {
     this.WaitForAck().catch((err) => ERROR("GetChipID", err));
     // read 4 bytes that contain chip id
     this.Read(4)
-      .then((array: Uint8Array) => {
+      .then((array: Uint8Array | null) => {
+        assert(array != null, "GetChipId expected data but null came");
         let chip_id: number = ((array[0] << 8) | array[1]) as number;
         if (chip_id in this.CHIP_ID) ERROR("Chip Id wasn't the right");
       })
-      .catch((err) => ERROR("GetChipID trying to read chip id from buffer", err)); // read 4 bytes that is chip id
+      .catch((err) => ERROR("GetChipID:", err)); // read 4 bytes that is chip id
     // send ACK
     this.SendAck();
     return;
