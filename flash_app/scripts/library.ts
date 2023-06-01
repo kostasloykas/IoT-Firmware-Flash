@@ -296,7 +296,7 @@ export class CC2538 implements Command {
     this.Write(nack);
   }
   //   FIXME: Receive Packet
-  async ReceivePacket(): Promise<Packet> {
+  async ReceivePacket() {
     const [size, checksum] = await this.Read(2); //read size and checksum
 
     let data: Uint8Array = new Uint8Array(await this.Read(size - 2));
@@ -304,7 +304,9 @@ export class CC2538 implements Command {
 
     if (packet.Checksum !== new Uint8Array([checksum])) ERROR("ReceivePacket: checksum error");
 
-    return packet;
+    return Promise.resolve(packet).then((packet) => {
+      return packet;
+    });
   }
 
   // FIXME: Send Sync
@@ -355,7 +357,7 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
   //   FIXME:
-  GetStatus(...params: any): RESPOND {
+  async GetStatus(...params: any): Promise<number> {
     let data: Uint8Array = this.encoder.encode([0x23]);
     let packet: Packet = new Packet(data);
 
@@ -368,7 +370,7 @@ export class CC2538 implements Command {
       ERROR("GetStaus:", err);
     });
 
-    let respond = this.ReceivePacket();
+    packet = await this.ReceivePacket();
     // FIXME: respond return
     return RESPOND.COMMAND_RET_FLASH_FAIL;
   }
@@ -385,8 +387,6 @@ export class CC2538 implements Command {
     this.WaitForAck().catch((err) => {
       ERROR("Ping", err);
     });
-
-    this.CheckLastCommand();
   }
 
   // TODO:
