@@ -36,6 +36,7 @@ export class CC2538 implements Command {
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
   };
+  start_address: number = 0x00200000;
 
   CHIP_ID: number[] = [0xb964, 0xb965];
 
@@ -74,11 +75,22 @@ export class CC2538 implements Command {
     PRINT("Synchronized");
     return;
 
+    let chip_id = this.GetChipID();
+    return;
+
     PRINT("Try to Ping");
     this.Ping();
     PRINT("Bootloader pinged");
+    return;
 
-    let chip_id = this.GetChipID();
+    PRINT("Try to configure CCA");
+    this.ConfigureCCA();
+    PRINT("CCA configured");
+    return;
+
+    PRINT("Try to reset device");
+    this.Reset();
+    PRINT("Device has been reset");
     return;
 
     this.ClosePort() // Close port
@@ -104,6 +116,10 @@ export class CC2538 implements Command {
     await this.port.close();
     PRINT("Port closed");
   }
+
+  //   TODO:
+  ConfigureCCA() {}
+
   //   TODO:
   MemoryWrite(...params: any): void {
     throw new Error("Method not implemented.");
@@ -175,25 +191,32 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
   //   TODO:
-  Download(...params: any): void {
-    throw new Error("Method not implemented.");
+  Download(image_size: number): void {
+    let data: Uint8Array = this.encoder.encode([0x21]);
+    let packet: Packet = new Packet(data);
+
+    this.Write(packet).catch((err) => {
+      ERROR("Download:", err);
+    });
+
+    this.GetStatus();
   }
   //   TODO:
   Run(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  //   FIXME:
-  async GetStatus(...params: any): Promise<number> {
+  //   FIXME: Get status
+  async GetStatus(): Promise<number> {
     let data: Uint8Array = this.encoder.encode([0x23]);
     let packet: Packet = new Packet(data);
 
     this.Write(packet).catch((err) => {
-      ERROR("GetStaus:", err);
+      ERROR("GetStatus:", err);
     });
 
     // wait for ack
     this.WaitForAck().catch((err) => {
-      ERROR("GetStaus:", err);
+      ERROR("GetStatus:", err);
     });
 
     packet = await this.ReceivePacket();
@@ -271,9 +294,19 @@ export class CC2538 implements Command {
     }
   }
 
-  //   TODO:
-  Reset(...params: any): void {
-    throw new Error("Method not implemented.");
+  //   FIXME: Reset
+  Reset(): void {
+    let data: Uint8Array = this.encoder.encode([0x25]);
+    let packet: Packet = new Packet(data);
+
+    this.Write(packet).catch((err) => {
+      ERROR("Reset:", err);
+    });
+
+    // wait for ack
+    this.WaitForAck().catch((err) => {
+      ERROR("Reset", err);
+    });
   }
   //   TODO:
   Erase(...params: any): void {

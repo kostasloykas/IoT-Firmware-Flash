@@ -126,7 +126,7 @@ async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
   lib.assert(device_selected === true, "No device has been selected");
   lib.assert(device_name in lib.SUPPORTED_DEVICES, "Device is not supported => " + device_name);
-  let port: any;
+  let port: any = null;
 
   try {
     // Prompt user to select any serial port.

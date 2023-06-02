@@ -63,6 +63,7 @@ export interface Command {
   encoder: any;
   decoder: any;
   filters: object;
+  start_address: number;
 
   InvokeBootloader(...params: any): void;
   OpenPort(...params: any): void;
@@ -88,6 +89,7 @@ export interface Command {
   SetXOSC(...params: any): void;
   ClearInputBuffer(...params: any): void;
   CheckLastCommand(...params: any): void;
+  ConfigureCCA(...params: any): void;
 }
 
 // ============================= CLASSES =============================
@@ -136,8 +138,9 @@ export class Packet {
   private data: Uint8Array;
 
   constructor(data: Uint8Array) {
+    assert(data.length + 2 <= 256, "data size must be <= 256 bytes");
     this.data = data;
-    this.size = new Uint8Array([data.length]);
+    this.size = new Uint8Array([data.length + 2]);
     this.checksum = this.ComputeChecksum();
   }
 
