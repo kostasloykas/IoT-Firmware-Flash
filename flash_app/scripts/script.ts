@@ -1,16 +1,29 @@
 /* script.ts */
-
+import $ from "jquery";
 import * as lib from "./library";
-import $, { error } from "jquery";
-import { FirmwareFile } from "./library";
-import { resolve } from "path";
+import { CC2538 } from "./cc2538";
+
+// =================== DISPATCHER ================
+type CreateInstanceDispatcher = {
+  [key: string]: () => CC2538;
+};
+
+// Dispatcher for creating instances auto of a specific device
+export const CreateInstanceOf: CreateInstanceDispatcher = {
+  [lib.SUPPORTED_DEVICES.CC2538]: () => {
+    return new CC2538();
+  },
+};
+
+// ==================== VARIABLES =========================
 
 // FIXME: device selected = false
 let device_selected: boolean = true;
 let image_selected: boolean = false;
 let timeout: any = null;
-let image: FirmwareFile = null;
-let device_name: string = null;
+let image: lib.FirmwareFile = null;
+// FIXME: device name = null
+let device_name: string = "CC2538";
 
 // ====================== FUNCTIONS ==================
 
@@ -40,7 +53,6 @@ window.addEventListener("load", function () {
   lib.CheckForSerialNavigator();
 
   // ====================== EVENT LISTENERS ==================
-
   // event listener for flash firmware button
   $("#flash_but").on("click", () => {
     let flash_button = $("#flash_but");
@@ -82,7 +94,7 @@ window.addEventListener("load", function () {
     }
     const input_element = document.querySelector('input[type="file"]') as HTMLInputElement;
 
-    image = new FirmwareFile(input_element);
+    image = new lib.FirmwareFile(input_element);
 
     Alert("Image uploaded successfully", "success");
     image_selected = true;
@@ -129,7 +141,7 @@ async function Main() {
     return;
   }
 
-  let device = lib.CreateInstanceOf[device_name](); // call dispatcher and create the instance
+  let device = CreateInstanceOf[device_name](); // call dispatcher and create the instance
   device.FlashFirmware(port, image);
   Alert("The process finished succsfully", "success");
   ReleaseFlashButton();

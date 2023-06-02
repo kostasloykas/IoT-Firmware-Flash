@@ -103,7 +103,6 @@
   },
   "include": [
     "./src/*.ts",
-    "scripts/library.ts",
-    "scripts/script.ts"
+    "./scripts/*.ts",
   ]
 }
