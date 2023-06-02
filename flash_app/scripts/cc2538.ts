@@ -9,8 +9,26 @@ enum VERSION_CC2538 {
 // To encode data before send them to device
 class Encoder {
   public encode(data: number[]): Uint8Array {
+    // check if data contains numbers greater than 1 byte
+    assert(() => {
+      for (let num of data) {
+        if (num > 2 ** 8) return false;
+      }
+      return true;
+    }, "Encoder: Numbers must be <= 1 byte");
+
     const encodedData = new Uint8Array(data);
     return encodedData;
+  }
+
+  // encodes the address in the MSB
+  public encode_addr(address: number): number[] {
+    assert(address <= 2 ** 32, "Encoder: number must be <= 4 byte");
+    let byte4: number = address >> 0 && 0xff;
+    let byte3: number = address >> 8 && 0xff;
+    let byte2: number = address >> 16 && 0xff;
+    let byte1: number = address >> 24 && 0xff;
+    return [byte1, byte2, byte3, byte4];
   }
 }
 
@@ -31,7 +49,7 @@ export class CC2538 implements Command {
   decoder: Decoder;
   filters: object = {
     dataBits: 8,
-    baudRate: 115200, //maximum 460800
+    baudRate: 115200, //maximum 115200
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
@@ -86,6 +104,16 @@ export class CC2538 implements Command {
     PRINT("Try to configure CCA");
     this.ConfigureCCA();
     PRINT("CCA configured");
+    return;
+
+    PRINT("Try to Erase");
+    this.Erase();
+    PRINT("Erase Done");
+    return;
+
+    PRINT("Try to Download");
+    this.Download(image.Size);
+    PRINT("Download configured");
     return;
 
     PRINT("Try to reset device");
@@ -170,9 +198,9 @@ export class CC2538 implements Command {
   }
 
   // FIXME: Wait for ack
-  WaitForAck(): Promise<void> {
+  async WaitForAck() {
     let data: Uint8Array = null;
-    this.Read(2).then((array) => (data = array));
+    await this.Read(2).then((array) => (data = array));
 
     for (let byte of data) {
       if (byte == ACK) return;
@@ -190,12 +218,29 @@ export class CC2538 implements Command {
   CRC32(...params: any): void {
     throw new Error("Method not implemented.");
   }
-  //   TODO:
+  //   FIXME: Download
   Download(image_size: number): void {
-    let data: Uint8Array = this.encoder.encode([0x21]);
+    let addr = this.encoder.encode_addr(this.start_address);
+    let size = this.encoder.encode_addr(image_size);
+    // let encode_size = ;
+    let data: Uint8Array = this.encoder.encode([
+      0x21,
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      size[0],
+      size[1],
+      size[2],
+      size[3],
+    ]);
     let packet: Packet = new Packet(data);
 
     this.Write(packet).catch((err) => {
+      ERROR("Download:", err);
+    });
+
+    this.WaitForAck().catch((err) => {
       ERROR("Download:", err);
     });
 
@@ -214,7 +259,6 @@ export class CC2538 implements Command {
       ERROR("GetStatus:", err);
     });
 
-    // wait for ack
     this.WaitForAck().catch((err) => {
       ERROR("GetStatus:", err);
     });

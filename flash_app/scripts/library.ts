@@ -96,6 +96,7 @@ export interface Command {
 
 export class FirmwareFile {
   private firmware_bytes: Uint8Array;
+  private size: number;
 
   public constructor(input_element: HTMLInputElement) {
     this.CheckFileExtention(input_element.files[0].name);
@@ -103,6 +104,7 @@ export class FirmwareFile {
       this.firmware_bytes = bytes;
       DEBUG(bytes);
     });
+    this.size = this.firmware_bytes.length;
   }
 
   // Check file extention
@@ -129,6 +131,10 @@ export class FirmwareFile {
 
       reader.readAsArrayBuffer(input_element.files[0]);
     });
+  }
+
+  public get Size(): number {
+    return this.size;
   }
 }
 
