@@ -41,7 +41,7 @@ class Decoder {
 }
 
 export class CC2538 implements Command {
-  private version: VERSION_CC2538;
+  version: VERSION_CC2538;
   port: any;
   writer: any;
   reader: any;
@@ -54,12 +54,13 @@ export class CC2538 implements Command {
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
   };
-  start_address: number = 0x00200000;
-
   CHIP_ID: number[] = [0xb964, 0xb965];
+  start_address: number = 0x00200000; //start address of flashing
+  configuration_address_of_bootloader: number = null;
+  FLASH_CTRL_DIECFG0 = 0x400d3014;
 
   // TODO: Flash firmware
-  FlashFirmware(port: any, image: FirmwareFile) {
+  async FlashFirmware(port: any, image: FirmwareFile) {
     // Initialize
     this.port = port;
     this.encoder = new Encoder();
@@ -67,7 +68,7 @@ export class CC2538 implements Command {
 
     // Open port
     PRINT("Try to open the port");
-    this.OpenPort()
+    await this.OpenPort()
       .then(() => {
         PRINT("Port opened");
       })
@@ -78,7 +79,7 @@ export class CC2538 implements Command {
     return;
 
     PRINT("Try to invoke bootloader");
-    this.InvokeBootloader() //Invoke bootloader
+    await this.InvokeBootloader() //Invoke bootloader
       .then(() => {
         PRINT("Bootloader invoked");
       })
@@ -89,7 +90,7 @@ export class CC2538 implements Command {
     return;
 
     PRINT("Try to Synch");
-    this.SendSync();
+    await this.SendSync();
     PRINT("Synchronized");
     return;
 
@@ -127,6 +128,10 @@ export class CC2538 implements Command {
       });
   }
 
+  FlashSize(): void {
+    throw new Error("Method not implemented.");
+  }
+
   // FIXME: invoke bootloader
   async InvokeBootloader() {
     await this.port.setSignals({ dataTerminalReady: true });
@@ -138,7 +143,7 @@ export class CC2538 implements Command {
   async OpenPort() {
     await this.port.open(this.filters);
   }
-  async ClosePort(...params: any) {
+  async ClosePort() {
     await this.reader.close();
     await this.writer.close();
     await this.port.close();

@@ -22,6 +22,7 @@ export enum SUPPORTED_DEVICES {
   CC2538 = "CC2538",
 }
 
+// FIXME: supported file extentions
 export enum FILE_EXTENTION {
   HEX = "hex",
 }
@@ -90,6 +91,7 @@ export interface Command {
   ClearInputBuffer(...params: any): void;
   CheckLastCommand(...params: any): void;
   ConfigureCCA(...params: any): void;
+  FlashSize(...params: any): void;
 }
 
 // ============================= CLASSES =============================
@@ -103,8 +105,8 @@ export class FirmwareFile {
     this.ConvertFirmwareToBytes(input_element).then((bytes) => {
       this.firmware_bytes = bytes;
       DEBUG(bytes);
+      this.size = this.firmware_bytes.length;
     });
-    this.size = this.firmware_bytes.length;
   }
 
   // Check file extention
