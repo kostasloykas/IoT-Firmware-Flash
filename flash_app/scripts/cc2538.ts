@@ -98,8 +98,13 @@ export class CC2538 implements Command {
     return;
 
     PRINT("Try to Ping");
-    this.Ping();
+    await this.Ping();
     PRINT("Bootloader pinged");
+    return;
+
+    PRINT("Try to find informations about device");
+    this.FlashSize();
+    PRINT("Informations received");
     return;
 
     PRINT("Try to configure CCA");
