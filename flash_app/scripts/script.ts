@@ -2,7 +2,6 @@
 import $ from "jquery";
 import * as lib from "./library";
 import { CC2538 } from "./cc2538";
-import { assert } from "console";
 
 // =================== DISPATCHER ================
 type CreateInstanceDispatcher = {
@@ -146,6 +145,7 @@ async function Main() {
   // must be inside the supported vendors and products id
   lib.PRINT("Vendor and Product ID:", port.getInfo());
 
+  return;
   let device = CreateInstanceOf[device_name](); // call dispatcher and create the instance
   await device.FlashFirmware(port, image);
   Alert("The process finished succsfully", "success");
