@@ -1,3 +1,4 @@
+import { error } from "console";
 import { ACK, DEBUG, ERROR, FirmwareFile, NACK, PRINT, Packet, RESPOND, assert, Command } from "./library";
 
 enum VERSION_CC2538 {
@@ -75,23 +76,26 @@ export class CC2538 implements Command {
       .catch((error) => {
         ERROR("OpenPort:", error);
       });
-
+    DEBUG(this.port);
     return;
-
     PRINT("Try to invoke bootloader");
     await this.InvokeBootloader() //Invoke bootloader
       .then(() => {
         PRINT("Bootloader invoked");
       })
       .catch((err) => {
-        ERROR("Invoke bootloader problem", err);
+        ERROR("Invoke bootloader:", err);
       });
 
-    return;
-
     PRINT("Try to Synch");
-    await this.SendSync();
-    PRINT("Synchronized");
+    await this.SendSync()
+      .then(() => {
+        PRINT("Synchronized");
+      })
+      .catch((err) => {
+        ERROR("SendSynch:", err);
+      });
+
     return;
 
     let chip_id = this.GetChipID();
@@ -137,14 +141,17 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: invoke bootloader
+  // invoke bootloader
   async InvokeBootloader() {
     await this.port.setSignals({ dataTerminalReady: true });
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for some time
+    await this.port.setSignals({ requestToSend: false });
+    await this.port.setSignals({ requestToSend: true });
+    await this.port.setSignals({ requestToSend: false });
+    await new Promise((resolve) => setTimeout(resolve, 3)); // Wait for some time
     await this.port.setSignals({ dataTerminalReady: false });
   }
 
-  // FIXME: Open port
+  // Open port
   async OpenPort() {
     await this.port.open(this.filters);
   }
@@ -190,19 +197,21 @@ export class CC2538 implements Command {
   }
 
   // FIXME: Send Sync
-  SendSync(): void {
+  async SendSync() {
     let data: Uint8Array = this.encoder.encode([0x55]);
     this.ClearInputBuffer();
+    PRINT("Buffer cleared");
 
-    this.Write(data).catch((err) => {
+    await this.Write(data).catch((err) => {
       ERROR("SendSynch", err);
     });
-    this.Write(data).catch((err) => {
+
+    await this.Write(data).catch((err) => {
       ERROR("SendSynch", err);
     });
 
     // wait for ack
-    this.WaitForAck().catch((err) => {
+    await this.WaitForAck().catch((err) => {
       ERROR("SendSynch", err);
     });
   }

@@ -67,17 +67,6 @@ window.addEventListener("load", function () {
     image_selected = true;
   });
 
-  // When device connect
-  navigator.serial.addEventListener("connect", (e: any) => {
-    Alert("Device connected", "primary");
-  });
-
-  // When device disconnect
-  navigator.serial.addEventListener("disconnect", (e: any) => {
-    Alert("Device disconnected", "danger");
-    lib.ERROR("Device disconnected");
-  });
-
   //
   window.addEventListener("unhandledrejection", function (event) {
     alert(event.reason); // the unhandled error object
