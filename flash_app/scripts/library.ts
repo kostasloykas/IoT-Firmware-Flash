@@ -152,9 +152,6 @@ export enum RESPOND {
 export const ACK = 0xcc;
 export const NACK = 0x33;
 
-export let SUPPORTED_DEVICES: Map<Device, any> = new Map<Device, any>();
-SUPPORTED_DEVICES.set(new Device(0x10c4, 0xea60), new CC2538()); // Zolertia CC2538
-
 // FIXME: supported file extentions
 export enum FILE_EXTENTION {
   HEX = "hex",
@@ -165,15 +162,6 @@ export enum FILE_EXTENTION {
 // Check if device supported
 // If yes the returns an instance of device
 // If no returns null
-export function InstanceOf(device: Device): any {
-  let instance = null;
-  SUPPORTED_DEVICES.forEach((value, key) => {
-    if (key.equals(device)) {
-      instance = value;
-    }
-  });
-  return instance;
-}
 
 export function PRINT(...anything: any): void {
   console.log(anything);

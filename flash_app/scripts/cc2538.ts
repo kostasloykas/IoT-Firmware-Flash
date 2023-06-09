@@ -1,4 +1,3 @@
-import { error } from "console";
 import { ACK, DEBUG, ERROR, FirmwareFile, NACK, PRINT, Packet, RESPOND, assert, Command } from "./library";
 
 enum VERSION_CC2538 {
@@ -76,8 +75,12 @@ export class CC2538 implements Command {
       .catch((error) => {
         ERROR("OpenPort:", error);
       });
+
+    //  initialize buffers
+    this.reader = this.port.readable.getReader();
+    this.writer = this.port.writable.getWriter();
     DEBUG(this.port);
-    return;
+
     PRINT("Try to invoke bootloader");
     await this.InvokeBootloader() //Invoke bootloader
       .then(() => {
@@ -86,6 +89,8 @@ export class CC2538 implements Command {
       .catch((err) => {
         ERROR("Invoke bootloader:", err);
       });
+
+    DEBUG(this.port);
 
     PRINT("Try to Synch");
     await this.SendSync()
@@ -200,7 +205,7 @@ export class CC2538 implements Command {
   async SendSync() {
     let data: Uint8Array = this.encoder.encode([0x55]);
     this.ClearInputBuffer();
-    PRINT("Buffer cleared");
+    PRINT("Readable buffer cleared");
 
     await this.Write(data).catch((err) => {
       ERROR("SendSynch", err);
@@ -219,7 +224,11 @@ export class CC2538 implements Command {
   // FIXME: Wait for ack
   async WaitForAck() {
     let data: Uint8Array = null;
-    await this.Read(2).then((array) => (data = array));
+    await this.Read(2)
+      .then((array) => (data = array))
+      .catch((err) => {
+        ERROR("Wait for ack", err);
+      });
 
     for (let byte of data) {
       if (byte == ACK) return;
@@ -308,44 +317,41 @@ export class CC2538 implements Command {
 
   // FIXME: Write
   async Write(data: Uint8Array | Packet) {
-    this.writer = this.port.getWriter();
-
     // if data are bytes
-    if (data instanceof Uint8Array)
-      if (data.length > 254) {
-        let start: number = 0;
-        let end: number = 0;
-        for (let index = 0; index < data.length; index += 254) {
-          let packet: Packet = new Packet(data.slice(index, index + 254));
-          await this.writer.write(packet);
-          start = index;
-        }
-      } else {
-        await this.writer.write(data);
-      }
-    // if data is packet
-    else if (data instanceof Packet) {
+    DEBUG(this.writer);
+
+    if (data instanceof Uint8Array) {
+      assert(data.length <= 254, "data length must be <= 254");
+      // if (data.length>254){
+      //   let start: number = 0;
+      //   let end: number = 0;
+      //   for (let index = 0; index < data.length; index += 254) {
+      //     let packet: Packet = new Packet(data.slice(index, index + 254));
+      //     await this.writer.write(packet);
+      //     start = index;
+      //   }else
+      await this.writer.write(data);
+      // if data is packet
+    } else if (data instanceof Packet) {
       let packet = data;
       this.writer.write(packet.Size);
       this.writer.write(packet.Checksum);
       this.writer.write(data.Data);
     }
-    this.writer.realeaseLock();
   }
 
   // FIXME: Read
-  async Read(length: number, timeout: number = 400) {
-    this.reader = this.port.getReader();
+  async Read(length: number, timeout: number = 100) {
+    DEBUG(this.port);
+
     const { data: value, done } = await Promise.race([
-      this.reader.read(length),
+      this.reader.read(),
       new Promise<void>((resolve, reject) =>
         setTimeout(() => {
           ERROR("Timeout occurred");
         }, timeout)
       ),
     ]);
-
-    this.reader.releaseLock();
 
     if (done) return null;
 
@@ -398,7 +404,7 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: Clear Input Buffer
+  // Clear Input Buffer
   async ClearInputBuffer() {
     const reader = this.port.readable.getReader();
 
@@ -407,7 +413,5 @@ export class CC2538 implements Command {
       const { value, done } = await reader.read();
       if (done) break; // Buffer is empty, exit the loop
     }
-
-    reader.releaseLock();
   }
 }

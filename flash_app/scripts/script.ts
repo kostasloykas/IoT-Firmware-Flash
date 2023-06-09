@@ -10,6 +10,9 @@ let image_selected: boolean = false;
 let timeout: any = null;
 let image: lib.FirmwareFile = null;
 
+export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>();
+SUPPORTED_DEVICES.set(new lib.Device(0x10c4, 0xea60), new CC2538()); // Zolertia CC2538
+
 // ====================== FUNCTIONS ==================
 
 function Alert(message: string, type_of_alert: string, duration: number = 4000) {
@@ -30,6 +33,16 @@ function Alert(message: string, type_of_alert: string, duration: number = 4000) 
 function ReleaseFlashButton(): void {
   let flash_button = $("#flash_but");
   flash_button.prop("disabled", false);
+}
+
+export function InstanceOf(device: lib.Device): any {
+  let instance = null;
+  SUPPORTED_DEVICES.forEach((value, key) => {
+    if (key.equals(device)) {
+      instance = value;
+    }
+  });
+  return instance;
 }
 
 // ====================== ON LOAD OF PAGE ==================
@@ -106,7 +119,7 @@ async function Main() {
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));
 
-  let device = lib.InstanceOf(device_type); // create object
+  let device = InstanceOf(device_type); // create object
 
   if (device == null) lib.ERROR("This device does not supported");
   else lib.PRINT("Device is ", device);
