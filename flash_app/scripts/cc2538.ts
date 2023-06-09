@@ -61,6 +61,8 @@ export class CC2538 implements Command {
 
   // TODO: Flash firmware
   async FlashFirmware(port: any, image: FirmwareFile) {
+    DEBUG("mpike");
+    return;
     // Initialize
     this.port = port;
     this.encoder = new Encoder();

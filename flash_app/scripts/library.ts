@@ -1,58 +1,12 @@
 /* library.ts */
 
+import { isObjectLiteralElement } from "../node_modules/typescript/lib/typescript";
+import { CC2538 } from "./cc2538";
+
 declare global {
   interface Navigator {
     serial: any;
   }
-}
-
-// ============================= VARIABLES =============================
-
-export enum RESPOND {
-  COMMAND_RET_SUCCESS = 0x40,
-  COMMAND_RET_UNKNOWN_CMD = 0x41,
-  COMMAND_RET_INVALID_ADR = 0x43,
-  COMMAND_RET_FLASH_FAIL = 0x44,
-}
-
-export const ACK = 0xcc;
-export const NACK = 0x33;
-
-export enum SUPPORTED_DEVICES {
-  CC2538 = "CC2538",
-}
-
-// FIXME: supported file extentions
-export enum FILE_EXTENTION {
-  HEX = "hex",
-}
-
-// ============================= FUNCTIONS =============================
-
-export function PRINT(...anything: any): void {
-  console.log(anything);
-}
-
-export function ERROR(...anything: any): void {
-  throw new Error(anything);
-}
-
-export function DEBUG(...anything: any): void {
-  console.log("DEBUG", anything);
-}
-
-export function CheckForSerialNavigator(): void {
-  // Web Serial API is not available
-  if (!("serial" in navigator)) {
-    alert("Web Serial API is not available");
-    ERROR("Web Serial API is not available");
-  }
-}
-
-// Assertions to ensure that certain conditions or
-// assumptions hold true
-export function assert(condition: unknown, msg: string): asserts condition {
-  if (condition === false) throw new Error("Assertion: " + msg);
 }
 
 // ============================= INTERFACES =============================
@@ -95,6 +49,15 @@ export interface Command {
 }
 
 // ============================= CLASSES =============================
+
+export class Device {
+  vendor: number;
+  product: number;
+  constructor(vendor: number, product: number) {
+    this.vendor = vendor;
+    this.product = product;
+  }
+}
 
 export class FirmwareFile {
   private firmware_bytes: Uint8Array;
@@ -170,4 +133,53 @@ export class Packet {
   get Data(): Uint8Array {
     return this.data;
   }
+}
+
+// ============================= VARIABLES =============================
+
+export enum RESPOND {
+  COMMAND_RET_SUCCESS = 0x40,
+  COMMAND_RET_UNKNOWN_CMD = 0x41,
+  COMMAND_RET_INVALID_ADR = 0x43,
+  COMMAND_RET_FLASH_FAIL = 0x44,
+}
+
+export const ACK = 0xcc;
+export const NACK = 0x33;
+
+export let SUPPORTED_DEVICES: Map<Device, any> = new Map<Device, any>();
+SUPPORTED_DEVICES.set(new Device(0x10c4, 0xea60), new CC2538()); // Zolertia CC2538
+DEBUG(SUPPORTED_DEVICES.size);
+DEBUG(SUPPORTED_DEVICES.has({ vendor: 0x10c4, product: 0xea60 }));
+
+// FIXME: supported file extentions
+export enum FILE_EXTENTION {
+  HEX = "hex",
+}
+
+// ============================= FUNCTIONS =============================
+
+export function PRINT(...anything: any): void {
+  console.log(anything);
+}
+
+export function ERROR(...anything: any): void {
+  throw new Error(anything);
+}
+
+export function DEBUG(...anything: any): void {
+  console.log("DEBUG", anything);
+}
+
+export function CheckForSerialNavigator(): void {
+  // Web Serial API is not available
+  if (!("serial" in navigator)) {
+    ERROR("Web Serial API is not available");
+  }
+}
+
+// Assertions to ensure that certain conditions or
+// assumptions hold true
+export function assert(condition: unknown, msg: string): asserts condition {
+  if (condition === false) throw new Error("Assertion: " + msg);
 }

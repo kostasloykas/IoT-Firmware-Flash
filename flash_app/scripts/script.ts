@@ -3,27 +3,11 @@ import $ from "jquery";
 import * as lib from "./library";
 import { CC2538 } from "./cc2538";
 
-// =================== DISPATCHER ================
-type CreateInstanceDispatcher = {
-  [key: string]: () => CC2538;
-};
-
-// Dispatcher for creating instances auto of a specific device
-export const CreateInstanceOf: CreateInstanceDispatcher = {
-  [lib.SUPPORTED_DEVICES.CC2538]: () => {
-    return new CC2538();
-  },
-};
-
 // ==================== VARIABLES =========================
 
-// FIXME: device selected = false
-let device_selected: boolean = true;
 let image_selected: boolean = false;
 let timeout: any = null;
 let image: lib.FirmwareFile = null;
-// FIXME: device name = null
-let device_name: string = "CC2538";
 
 // ====================== FUNCTIONS ==================
 
@@ -57,10 +41,6 @@ window.addEventListener("load", function () {
   $("#flash_but").on("click", () => {
     let flash_button = $("#flash_but");
 
-    if (!device_selected) {
-      Alert("No device selected", "danger");
-      return;
-    }
     if (!image_selected) {
       Alert("No image selected", "danger");
       return;
@@ -68,20 +48,6 @@ window.addEventListener("load", function () {
 
     flash_button.prop("disabled", true);
     Main();
-  });
-
-  $("#device").on("change", () => {
-    device_name = $("#device").val() as string;
-    lib.PRINT("Device selected: ".concat(device_name));
-
-    if (device_name == "null") {
-      Alert("No device selected", "danger");
-      device_selected = false;
-      return;
-    }
-
-    Alert("Device selected " + device_name, "success");
-    device_selected = true;
   });
 
   // When image is being upload
@@ -124,8 +90,6 @@ window.addEventListener("load", function () {
 
 async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
-  lib.assert(device_selected === true, "No device has been selected");
-  lib.assert(device_name in lib.SUPPORTED_DEVICES, "Device is not supported => " + device_name);
   let port: any = null;
 
   try {
@@ -143,11 +107,20 @@ async function Main() {
 
   // FIXME: check the vendor id and product id of device
   // must be inside the supported vendors and products id
-  lib.PRINT("Vendor and Product ID:", port.getInfo());
+  const product_id: number = port.getInfo().usbProductId;
+  const vendor_id: number = port.getInfo().usbVendorId;
+  let device_type: lib.Device = { vendor: vendor_id, product: product_id };
+  lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));
 
-  return;
-  let device = CreateInstanceOf[device_name](); // call dispatcher and create the instance
+  lib.DEBUG(device_type);
+  lib.DEBUG(lib.SUPPORTED_DEVICES);
+  if (!lib.SUPPORTED_DEVICES.has(device_type)) {
+    lib.ERROR("This device does not supported");
+  }
+
+  let device = lib.SUPPORTED_DEVICES.get(device_type); // call dispatcher and create the instance
   await device.FlashFirmware(port, image);
+  return;
   Alert("The process finished succsfully", "success");
   ReleaseFlashButton();
 
