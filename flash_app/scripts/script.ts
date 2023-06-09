@@ -2,6 +2,7 @@
 import $ from "jquery";
 import * as lib from "./library";
 import { CC2538 } from "./cc2538";
+import { ERROR } from "./library";
 
 // ==================== VARIABLES =========================
 
@@ -80,7 +81,6 @@ window.addEventListener("load", function () {
   //
   window.addEventListener("unhandledrejection", function (event) {
     alert(event.reason); // the unhandled error object
-    lib.DEBUG(event.reason);
     Alert("Flash canceled", "danger");
     ReleaseFlashButton();
   });
@@ -92,35 +92,37 @@ async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
   let port: any = null;
 
-  try {
-    // Prompt user to select any serial port.
-    port = await navigator.serial.requestPort();
-  } catch (error) {
-    Alert(
-      "Please select the port in order \
+  // Prompt user to select any serial port.
+  await navigator.serial
+    .requestPort()
+    .then((port_: any) => {
+      port = port_;
+    })
+    .catch((error: any) => {
+      Alert(
+        "Please select the port in order \
           to flash the firmware",
-      "danger"
-    );
-    ReleaseFlashButton();
-    return;
-  }
+        "danger"
+      );
+      ERROR("Request port: ", error);
+      ReleaseFlashButton();
+      return;
+    });
 
-  // FIXME: check the vendor id and product id of device
+  lib.assert(port != null, "Port must be != null");
+  // check the vendor id and product id of device
   // must be inside the supported vendors and products id
   const product_id: number = port.getInfo().usbProductId;
   const vendor_id: number = port.getInfo().usbVendorId;
-  let device_type: lib.Device = { vendor: vendor_id, product: product_id };
+  let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));
 
-  lib.DEBUG(device_type);
-  lib.DEBUG(lib.SUPPORTED_DEVICES);
-  if (!lib.SUPPORTED_DEVICES.has(device_type)) {
-    lib.ERROR("This device does not supported");
-  }
+  let device = lib.InstanceOf(device_type); // create object
 
-  let device = lib.SUPPORTED_DEVICES.get(device_type); // call dispatcher and create the instance
+  if (device == null) lib.ERROR("This device does not supported");
+  else lib.PRINT("Device is ", device);
+
   await device.FlashFirmware(port, image);
-  return;
   Alert("The process finished succsfully", "success");
   ReleaseFlashButton();
 

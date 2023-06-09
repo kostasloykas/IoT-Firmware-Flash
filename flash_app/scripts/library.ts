@@ -57,6 +57,11 @@ export class Device {
     this.vendor = vendor;
     this.product = product;
   }
+
+  // something like operator overload ==
+  equals(other: Device): boolean {
+    return this.vendor == other.vendor && this.product == other.product;
+  }
 }
 
 export class FirmwareFile {
@@ -149,8 +154,6 @@ export const NACK = 0x33;
 
 export let SUPPORTED_DEVICES: Map<Device, any> = new Map<Device, any>();
 SUPPORTED_DEVICES.set(new Device(0x10c4, 0xea60), new CC2538()); // Zolertia CC2538
-DEBUG(SUPPORTED_DEVICES.size);
-DEBUG(SUPPORTED_DEVICES.has({ vendor: 0x10c4, product: 0xea60 }));
 
 // FIXME: supported file extentions
 export enum FILE_EXTENTION {
@@ -158,6 +161,19 @@ export enum FILE_EXTENTION {
 }
 
 // ============================= FUNCTIONS =============================
+
+// Check if device supported
+// If yes the returns an instance of device
+// If no returns null
+export function InstanceOf(device: Device): any {
+  let instance = null;
+  SUPPORTED_DEVICES.forEach((value, key) => {
+    if (key.equals(device)) {
+      instance = value;
+    }
+  });
+  return instance;
+}
 
 export function PRINT(...anything: any): void {
   console.log(anything);
