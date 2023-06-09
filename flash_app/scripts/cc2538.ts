@@ -1,4 +1,15 @@
-import { ACK, DEBUG, ERROR, FirmwareFile, NACK, PRINT, Packet, RESPOND, assert, Command } from "./library";
+import {
+  ACK,
+  DEBUG,
+  ERROR,
+  FirmwareFile,
+  NACK,
+  PRINT,
+  Packet,
+  RESPOND as RESPONSE,
+  assert,
+  Command,
+} from "./library";
 
 enum VERSION_CC2538 {
   _512_KB,
@@ -53,6 +64,7 @@ export class CC2538 implements Command {
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
+    // bufferSize: 4 * 1024, //4KB
   };
   CHIP_ID: number[] = [0xb964, 0xb965];
   start_address: number = 0x00200000; //start address of flashing
@@ -76,11 +88,6 @@ export class CC2538 implements Command {
         ERROR("OpenPort:", error);
       });
 
-    //  initialize buffers
-    this.reader = this.port.readable.getReader();
-    this.writer = this.port.writable.getWriter();
-    DEBUG(this.port);
-
     PRINT("Try to invoke bootloader");
     await this.InvokeBootloader() //Invoke bootloader
       .then(() => {
@@ -90,6 +97,10 @@ export class CC2538 implements Command {
         ERROR("Invoke bootloader:", err);
       });
 
+    //  initialize buffers
+    DEBUG(this.port);
+    this.reader = this.port.readable.getReader();
+    this.writer = this.port.writable.getWriter();
     DEBUG(this.port);
 
     PRINT("Try to Synch");
@@ -204,8 +215,10 @@ export class CC2538 implements Command {
   // FIXME: Send Sync
   async SendSync() {
     let data: Uint8Array = this.encoder.encode([0x55]);
-    this.ClearInputBuffer();
+    //FIXME: await this.ClearInputBuffer();
     PRINT("Readable buffer cleared");
+
+    DEBUG(this.port);
 
     await this.Write(data).catch((err) => {
       ERROR("SendSynch", err);
@@ -292,8 +305,8 @@ export class CC2538 implements Command {
     });
 
     packet = await this.ReceivePacket();
-    // FIXME: respond return
-    return RESPOND.COMMAND_RET_FLASH_FAIL;
+    // FIXME: response return
+    return RESPONSE.COMMAND_RET_FLASH_FAIL;
   }
   //   FIXME: Ping
   Ping(): void {
@@ -318,7 +331,6 @@ export class CC2538 implements Command {
   // FIXME: Write
   async Write(data: Uint8Array | Packet) {
     // if data are bytes
-    DEBUG(this.writer);
 
     if (data instanceof Uint8Array) {
       assert(data.length <= 254, "data length must be <= 254");
@@ -341,11 +353,9 @@ export class CC2538 implements Command {
   }
 
   // FIXME: Read
-  async Read(length: number, timeout: number = 100) {
-    DEBUG(this.port);
-
+  async Read(length: number, timeout: number = 1000) {
     const { data: value, done } = await Promise.race([
-      this.reader.read(),
+      this.reader.read(length),
       new Promise<void>((resolve, reject) =>
         setTimeout(() => {
           ERROR("Timeout occurred");
@@ -404,14 +414,19 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // Clear Input Buffer
+  // FIXME: Clear Input Buffer
   async ClearInputBuffer() {
-    const reader = this.port.readable.getReader();
-
     // Read and discard data until the buffer is empty
+
+    DEBUG(this.port);
+
     while (true) {
-      const { value, done } = await reader.read();
-      if (done) break; // Buffer is empty, exit the loop
+      DEBUG("elaaa1");
+      const { value, done } = await this.reader.read();
+      DEBUG("elaaa2");
+      if (done) {
+        break; // Buffer is empty, exit the loop
+      }
     }
   }
 }
