@@ -210,10 +210,9 @@ export class CC2538 implements Command {
     });
   }
 
-  // FIXME: Send Sync
+  // Send Sync
   async SendSync() {
     let data: Uint8Array = this.encoder.encode([0x55]);
-    DEBUG(this.port);
 
     await this.Write(data)
       .then(() => {
@@ -232,22 +231,26 @@ export class CC2538 implements Command {
       });
 
     // wait for ack
-    await this.WaitForAck().catch((err) => {
-      ERROR("SendSynch wait for ACK/NACK", err);
-    });
+    await this.WaitForAck()
+      .then((answer) => {
+        assert(answer != NACK, "you must handle NACK");
+      })
+      .catch((err) => {
+        ERROR("SendSynch wait for ACK/NACK", err);
+      });
   }
 
-  // FIXME: Wait for ack
-  async WaitForAck() {
+  // Wait for ack
+  async WaitForAck(): Promise<number> {
     let data: Uint8Array = null;
     await this.ReadInto(new ArrayBuffer(2)) //read 2 bytes
       .then((array) => (data = array))
       .catch((err) => {
-        ERROR("Wait for ack", err);
+        ERROR("WaitForAck", err);
       });
 
-    if (data[0] == 0x00 && data[1] == ACK) return;
-    else if (data[0] == 0x00 && data[1] == NACK) throw Error("Response was NACK");
+    if (data[0] == 0x00 && data[1] == ACK) return ACK;
+    else if (data[0] == 0x00 && data[1] == NACK) NACK;
 
     throw Error("Unrecognized response (neither ACK nor NACK)");
   }
