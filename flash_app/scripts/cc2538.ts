@@ -246,10 +246,8 @@ export class CC2538 implements Command {
         ERROR("Wait for ack", err);
       });
 
-    for (let byte of data) {
-      if (byte == ACK) return;
-      else if (byte == NACK) throw Error("Response was NACK");
-    }
+    if (data[0] == 0x00 && data[1] == ACK) return;
+    else if (data[0] == 0x00 && data[1] == NACK) throw Error("Response was NACK");
 
     throw Error("Unrecognized response (neither ACK nor NACK)");
   }
@@ -417,16 +415,16 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: ReadInto
+  // ReadInto
   async ReadInto(buffer: ArrayBuffer) {
     let offset = 0;
 
-    let timeout = setTimeout(() => {
-      ERROR("Read timeout occurred");
-    }, 100); // 100ms
     while (offset < buffer.byteLength) {
+      let timeout = setTimeout(() => {
+        ERROR("Read timeout occurred");
+      }, 100); // 100ms
       const { value, done } = await this.reader.read(new Uint8Array(buffer, offset));
-      timeout.refresh();
+      clearTimeout(timeout);
       if (done) {
         break;
       }
@@ -434,8 +432,7 @@ export class CC2538 implements Command {
       offset += value.byteLength;
     }
 
-    clearTimeout(timeout);
-    DEBUG("Buffer===", new Uint8Array(buffer));
+    DEBUG("Data came", new Uint8Array(buffer));
     return new Uint8Array(buffer);
   }
 }
