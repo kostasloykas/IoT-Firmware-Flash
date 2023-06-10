@@ -42,7 +42,6 @@ export interface Command {
   Erase(...params: any): void;
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
-  ClearInputBuffer(...params: any): void;
   CheckLastCommand(...params: any): void;
   ConfigureCCA(...params: any): void;
   FlashSize(...params: any): void;

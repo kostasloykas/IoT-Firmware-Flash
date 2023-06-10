@@ -60,7 +60,7 @@ export class CC2538 implements Command {
   decoder: Decoder;
   filters: object = {
     dataBits: 8,
-    baudRate: 115200, //maximum 115200
+    baudRate: 460800, //maximum 115200 , 460800
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
@@ -90,18 +90,16 @@ export class CC2538 implements Command {
 
     PRINT("Try to invoke bootloader");
     await this.InvokeBootloader() //Invoke bootloader
-      .then(() => {
-        PRINT("Bootloader invoked");
-      })
       .catch((err) => {
         ERROR("Invoke bootloader:", err);
+      })
+      .then(() => {
+        PRINT("Bootloader Invoked");
       });
 
     //  initialize buffers
-    DEBUG(this.port);
-    this.reader = this.port.readable.getReader();
+    this.reader = this.port.readable.getReader({ mode: "byob" });
     this.writer = this.port.writable.getWriter();
-    DEBUG(this.port);
 
     PRINT("Try to Synch");
     await this.SendSync()
@@ -159,12 +157,12 @@ export class CC2538 implements Command {
 
   // invoke bootloader
   async InvokeBootloader() {
-    await this.port.setSignals({ dataTerminalReady: true });
-    await this.port.setSignals({ requestToSend: false });
+    await this.port.setSignals({ dataTerminalReady: true, requestToSend: false });
     await this.port.setSignals({ requestToSend: true });
     await this.port.setSignals({ requestToSend: false });
-    await new Promise((resolve) => setTimeout(resolve, 3)); // Wait for some time
+    await new Promise((resolve) => setTimeout(resolve, 10)); // Wait for some time
     await this.port.setSignals({ dataTerminalReady: false });
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for some time
   }
 
   // Open port
@@ -215,29 +213,34 @@ export class CC2538 implements Command {
   // FIXME: Send Sync
   async SendSync() {
     let data: Uint8Array = this.encoder.encode([0x55]);
-    //FIXME: await this.ClearInputBuffer();
-    PRINT("Readable buffer cleared");
-
     DEBUG(this.port);
 
-    await this.Write(data).catch((err) => {
-      ERROR("SendSynch", err);
-    });
+    await this.Write(data)
+      .then(() => {
+        PRINT("Send 0x55");
+      })
+      .catch((err) => {
+        ERROR("SendSynch", err);
+      });
 
-    await this.Write(data).catch((err) => {
-      ERROR("SendSynch", err);
-    });
+    await this.Write(data)
+      .then(() => {
+        PRINT("Send 0x55");
+      })
+      .catch((err) => {
+        ERROR("SendSynch", err);
+      });
 
     // wait for ack
     await this.WaitForAck().catch((err) => {
-      ERROR("SendSynch", err);
+      ERROR("SendSynch wait for ACK/NACK", err);
     });
   }
 
   // FIXME: Wait for ack
   async WaitForAck() {
     let data: Uint8Array = null;
-    await this.Read(2)
+    await this.ReadInto(new ArrayBuffer(2)) //read 2 bytes
       .then((array) => (data = array))
       .catch((err) => {
         ERROR("Wait for ack", err);
@@ -414,19 +417,25 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: Clear Input Buffer
-  async ClearInputBuffer() {
-    // Read and discard data until the buffer is empty
+  // FIXME: ReadInto
+  async ReadInto(buffer: ArrayBuffer) {
+    let offset = 0;
 
-    DEBUG(this.port);
-
-    while (true) {
-      DEBUG("elaaa1");
-      const { value, done } = await this.reader.read();
-      DEBUG("elaaa2");
+    let timeout = setTimeout(() => {
+      ERROR("Read timeout occurred");
+    }, 100); // 100ms
+    while (offset < buffer.byteLength) {
+      const { value, done } = await this.reader.read(new Uint8Array(buffer, offset));
+      timeout.refresh();
       if (done) {
-        break; // Buffer is empty, exit the loop
+        break;
       }
+      buffer = value.buffer;
+      offset += value.byteLength;
     }
+
+    clearTimeout(timeout);
+    DEBUG("Buffer===", new Uint8Array(buffer));
+    return new Uint8Array(buffer);
   }
 }
