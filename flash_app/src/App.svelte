@@ -12,7 +12,7 @@
   <div class="d-flex justify-content-center m-5">
     <div class=" col-sm-5 text-center border border-success border-3 rounded-3 p-3">
       <span class="h2 fw-bold">Upload file</span>
-      <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex" />
+      <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex , .bin" />
 
       <div class="mt-4">
         <button id="flash_but" class=" btn btn-success">Flash firmware</button>

@@ -1,3 +1,4 @@
+import { buffer } from "stream/consumers";
 import {
   ACK,
   DEBUG,
@@ -110,9 +111,8 @@ export class CC2538 implements Command {
         ERROR("SendSynch:", err);
       });
 
-    return;
-
     let chip_id = this.GetChipID();
+
     return;
 
     PRINT("Try to Ping");
@@ -188,26 +188,43 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  SendAck(...params: any): void {
+  async SendAck() {
     let ack: Uint8Array = new Uint8Array([0x00, ACK]);
-    this.Write(ack);
+    await this.Write(ack);
   }
-  SendNAck(...params: any): void {
+  async SendNAck() {
     let nack: Uint8Array = new Uint8Array([0x00, NACK]);
-    this.Write(nack);
+    await this.Write(nack);
   }
   //   FIXME: Receive Packet
-  async ReceivePacket() {
-    const [size, checksum] = await this.Read(2); //read size and checksum
+  // @returns {null if checksum wasn't valid} or {Packet} .
+  async ReceivePacket(): Promise<Packet> {
+    let size: number;
+    let checksum: number;
+    let data: Uint8Array;
 
-    let data: Uint8Array = new Uint8Array(await this.Read(size - 2));
+    //read size and checksum
+    await this.ReadInto(new ArrayBuffer(2))
+      .then((buffer) => {
+        size = buffer[0];
+        checksum = buffer[1];
+      })
+      .catch((err) => {
+        ERROR("ReceivePacket:", err);
+      });
+
+    await this.ReadInto(new ArrayBuffer(size - 2))
+      .then((buffer) => {
+        data = buffer;
+      })
+      .catch((err) => {
+        ERROR("ReceivePacket:", err);
+      });
+
     let packet: Packet = new Packet(data);
 
-    if (packet.Checksum !== new Uint8Array([checksum])) ERROR("ReceivePacket: checksum error");
-
-    return Promise.resolve(packet).then((packet) => {
-      return packet;
-    });
+    if (packet.Checksum !== checksum) return null;
+    return packet;
   }
 
   // Send Sync
@@ -232,8 +249,8 @@ export class CC2538 implements Command {
 
     // wait for ack
     await this.WaitForAck()
-      .then((answer) => {
-        assert(answer != NACK, "you must handle NACK");
+      .then((response) => {
+        assert(response == ACK, "response must be ACK");
       })
       .catch((err) => {
         ERROR("SendSynch wait for ACK/NACK", err);
@@ -350,9 +367,9 @@ export class CC2538 implements Command {
       // if data is packet
     } else if (data instanceof Packet) {
       let packet = data;
-      this.writer.write(packet.Size);
-      this.writer.write(packet.Checksum);
-      this.writer.write(data.Data);
+      await this.writer.write(packet.Size);
+      await this.writer.write(packet.Checksum);
+      await this.writer.write(data.Data);
     }
   }
 
@@ -395,23 +412,46 @@ export class CC2538 implements Command {
   Erase(...params: any): void {
     throw new Error("Method not implemented.");
   }
+
   // FIXME: Get Chip Id
-  GetChipID(): void {
+  // @returns {number of chip id}
+  async GetChipID(): Promise<number> {
     // send the command
-    this.Write(new Packet(new Uint8Array([0x20]))).catch((err) => ERROR("GetChipID", err));
+    let packet: Packet = new Packet(new Uint8Array([0x28]));
+
+    // FIXME: Try 3 times
+
+    // write packet
+    await this.Write(packet).catch((err) => ERROR("GetChipID", err));
+
     // wait for ACK
-    this.WaitForAck().catch((err) => ERROR("GetChipID", err));
-    // read 4 bytes that contain chip id
-    this.Read(4)
-      .then((array: Uint8Array | null) => {
-        assert(array != null, "GetChipId expected data but null came");
-        let chip_id: number = ((array[0] << 8) | array[1]) as number;
-        if (chip_id in this.CHIP_ID) ERROR("Chip Id wasn't the right");
+    await this.WaitForAck()
+      .then((response) => {
+        assert(response == ACK, "response must be ACK");
       })
-      .catch((err) => ERROR("GetChipID:", err)); // read 4 bytes that is chip id
+      .catch((err) => ERROR("GetChipID", err));
+
+    // receive packet
+    await this.ReceivePacket()
+      .then((packet: Packet) => {
+        DEBUG("Packet came:", packet);
+        if (packet == null) {
+          this.SendNAck();
+          throw new Error("Packet was corrupted");
+        } else {
+          this.SendAck();
+          DEBUG("Packet is ", packet);
+        }
+
+        // let chip_id: number = ((packet.Data[0] << 8) | packet.Data[1]) as number;
+        // if (chip_id in this.CHIP_ID) ERROR("Chip Id wasn't the right");
+      })
+      .catch((err) => ERROR("GetChipID:", err));
+
     // send ACK
-    this.SendAck();
-    return;
+    await this.SendAck();
+
+    return null;
   }
   //   TODO:
   SetXOSC(...params: any): void {

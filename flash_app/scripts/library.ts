@@ -1,8 +1,5 @@
 /* library.ts */
 
-import { isObjectLiteralElement } from "../node_modules/typescript/lib/typescript";
-import { CC2538 } from "./cc2538";
-
 declare global {
   interface Navigator {
     serial: any;
@@ -108,29 +105,30 @@ export class FirmwareFile {
 }
 
 export class Packet {
-  private size: Uint8Array;
-  private checksum: Uint8Array;
+  private size: number;
+  private checksum: number;
   private data: Uint8Array;
 
   constructor(data: Uint8Array) {
-    assert(data.length + 2 <= 256, "data size must be <= 256 bytes");
+    assert(data.length + 2 <= 255, "data size must be <= 255 bytes");
     this.data = data;
-    this.size = new Uint8Array([data.length + 2]);
+    this.size = data.length + 2;
     this.checksum = this.ComputeChecksum();
   }
 
-  public ComputeChecksum(): Uint8Array {
-    const sum: number = this.data.reduce((sum, i) => sum + i && 0xff);
-    return new Uint8Array([sum]);
+  public ComputeChecksum(): number {
+    // FIXME: const sum: number = this.data.reduce((sum, i) => sum + i && 0xff);
+    const checksum: number = this.data.reduce((sum, i) => sum + i) % 256;
+    return checksum;
   }
 
-  get Size(): Uint8Array {
-    assert(this.size.length == 1, "Packet size.length must be 1 byte");
+  get Size(): number {
+    assert(this.size <= 255, "size must be 1 byte");
     return this.size;
   }
 
-  get Checksum(): Uint8Array {
-    assert(this.checksum.length == 1, "Packet checksum.length must be 1 byte");
+  get Checksum(): number {
+    assert(this.checksum <= 255, "checksum must be 1 byte");
     return this.checksum;
   }
 
@@ -154,6 +152,7 @@ export const NACK = 0x33;
 // FIXME: supported file extentions
 export enum FILE_EXTENTION {
   HEX = "hex",
+  BIN = "bin",
 }
 
 // ============================= FUNCTIONS =============================
