@@ -69,8 +69,7 @@ export class CC2538 implements Command {
   };
   CHIP_ID: number[] = [0xb964, 0xb965];
   start_address: number = 0x00200000; //start address of flashing
-  configuration_address_of_bootloader: number = null;
-  FLASH_CTRL_DIECFG0 = 0x400d3014;
+  FLASH_CTRL_DIECFG0: number = 0x400d3014;
 
   // TODO: Flash firmware
   async FlashFirmware(port: any, image: FirmwareFile) {
@@ -111,44 +110,50 @@ export class CC2538 implements Command {
         ERROR("SendSynch:", err);
       });
 
-    let chip_id = this.GetChipID();
+    PRINT("Try to get Chip Id");
+    await this.GetChipID()
+      .then((chip_id) => {
+        PRINT("The Chip Id of device is ", chip_id.toString(16));
+      })
+      .catch((err) => {
+        ERROR("GetChipID:", err);
+      });
 
-    return;
+    // PRINT("Try to Ping");
+    // await this.Ping();
+    // PRINT("Bootloader pinged");
+    // return;
 
-    PRINT("Try to Ping");
-    await this.Ping();
-    PRINT("Bootloader pinged");
-    return;
+    // PRINT("Try to find informations about device");
+    // this.FlashSize();
+    // PRINT("Informations received");
+    // return;
 
-    PRINT("Try to find informations about device");
-    this.FlashSize();
-    PRINT("Informations received");
-    return;
+    // PRINT("Try to configure CCA");
+    // this.ConfigureCCA();
+    // PRINT("CCA configured");
+    // return;
 
-    PRINT("Try to configure CCA");
-    this.ConfigureCCA();
-    PRINT("CCA configured");
-    return;
+    // PRINT("Try to Erase");
+    // this.Erase();
+    // PRINT("Erase Done");
+    // return;
 
-    PRINT("Try to Erase");
-    this.Erase();
-    PRINT("Erase Done");
-    return;
-
-    PRINT("Try to Download");
-    this.Download(image.Size);
-    PRINT("Download configured");
-    return;
+    // PRINT("Try to Download");
+    // this.Download(image.Size);
+    // PRINT("Download configured");
+    // return;
 
     PRINT("Try to reset device");
     this.Reset();
     PRINT("Device has been reset");
-    return;
 
-    this.ClosePort() // Close port
-      .catch((err) => {
-        ERROR("Port can't be closed ", err);
-      });
+    // this.ClosePort() // Close port
+    //   .catch((err) => {
+    //     ERROR("Port can't be closed ", err);
+    //   });
+
+    return;
   }
 
   FlashSize(): void {
@@ -366,31 +371,10 @@ export class CC2538 implements Command {
       await this.writer.write(data);
       // if data is packet
     } else if (data instanceof Packet) {
-      let packet = data;
-      await this.writer.write(packet.Size);
-      await this.writer.write(packet.Checksum);
+      let packet: Packet = data;
+      await this.writer.write(new Uint8Array([packet.Size]));
+      await this.writer.write(new Uint8Array([packet.Checksum]));
       await this.writer.write(data.Data);
-    }
-  }
-
-  // FIXME: Read
-  async Read(length: number, timeout: number = 1000) {
-    const { data: value, done } = await Promise.race([
-      this.reader.read(length),
-      new Promise<void>((resolve, reject) =>
-        setTimeout(() => {
-          ERROR("Timeout occurred");
-        }, timeout)
-      ),
-    ]);
-
-    if (done) return null;
-
-    if (value) {
-      DEBUG("Data read");
-      let data: Uint8Array = this.decoder.decode(value);
-      DEBUG(data);
-      return data;
     }
   }
 
@@ -413,16 +397,16 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: Get Chip Id
+  // Get Chip Id
   // @returns {number of chip id}
   async GetChipID(): Promise<number> {
-    // send the command
+    // create command
     let packet: Packet = new Packet(new Uint8Array([0x28]));
-
-    // FIXME: Try 3 times
-
+    let chip_id: number = null;
     // write packet
-    await this.Write(packet).catch((err) => ERROR("GetChipID", err));
+    await this.Write(packet).catch((err) => {
+      ERROR("GetChipID", err);
+    });
 
     // wait for ACK
     await this.WaitForAck()
@@ -434,24 +418,21 @@ export class CC2538 implements Command {
     // receive packet
     await this.ReceivePacket()
       .then((packet: Packet) => {
-        DEBUG("Packet came:", packet);
         if (packet == null) {
-          this.SendNAck();
+          this.SendNAck(); //send ACK
           throw new Error("Packet was corrupted");
         } else {
-          this.SendAck();
-          DEBUG("Packet is ", packet);
+          this.SendAck(); //send NACK
+          DEBUG("Packet came:", packet);
         }
 
-        // let chip_id: number = ((packet.Data[0] << 8) | packet.Data[1]) as number;
-        // if (chip_id in this.CHIP_ID) ERROR("Chip Id wasn't the right");
+        chip_id = ((packet.Data[2] << 8) | packet.Data[3]) as number;
+        if (!this.CHIP_ID.includes(chip_id)) ERROR("Unrecognized Chip Id");
       })
       .catch((err) => ERROR("GetChipID:", err));
 
-    // send ACK
-    await this.SendAck();
-
-    return null;
+    assert(chip_id != null, "Chip Id must be != null");
+    return chip_id;
   }
   //   TODO:
   SetXOSC(...params: any): void {
@@ -466,6 +447,7 @@ export class CC2538 implements Command {
       let timeout = setTimeout(() => {
         ERROR("Read timeout occurred");
       }, 100); // 100ms
+
       const { value, done } = await this.reader.read(new Uint8Array(buffer, offset));
       clearTimeout(timeout);
       if (done) {
@@ -475,7 +457,6 @@ export class CC2538 implements Command {
       offset += value.byteLength;
     }
 
-    DEBUG("Data came", new Uint8Array(buffer));
     return new Uint8Array(buffer);
   }
 }

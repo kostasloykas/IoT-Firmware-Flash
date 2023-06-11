@@ -34,7 +34,6 @@ export interface Command {
   Ping(...params: any): void;
   SendData(...params: any): void;
   Write(...params: any): void;
-  Read(...params: any): void;
   Reset(...params: any): void;
   Erase(...params: any): void;
   GetChipID(...params: any): void;
