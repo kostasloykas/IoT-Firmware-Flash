@@ -184,7 +184,7 @@ export class CC2538 implements Command {
     let nack: Uint8Array = new Uint8Array([0x00, NACK]);
     await this.Write(nack);
   }
-  //   FIXME: Receive Packet
+  // Receive Packet
   // @returns {null if checksum wasn't valid} or {Packet} .
   async ReceivePacket(): Promise<Packet> {
     let size: number;
@@ -307,7 +307,7 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  //   FIXME: Get status
+  // Get status
   async GetStatus(): Promise<number> {
     let data: Uint8Array = this.encoder.encode([0x23]);
     let packet: Packet = new Packet(data);
@@ -328,10 +328,7 @@ export class CC2538 implements Command {
     await this.ReceivePacket()
       .then((packet: Packet) => {
         if (packet == null) throw new Error("Packet was corrupted");
-        else {
-          DEBUG("Packet came:", packet);
-          response = packet.Data[0];
-        }
+        else response = packet.Data[0];
       })
       .catch((err) => {
         ERROR("GetStatus:", err);
@@ -418,7 +415,6 @@ export class CC2538 implements Command {
     await this.ReceivePacket()
       .then((packet: Packet) => {
         if (packet == null) throw new Error("Packet was corrupted");
-        else DEBUG("Packet came:", packet);
 
         chip_id = ((packet.Data[2] << 8) | packet.Data[3]) as number;
         if (!this.CHIP_ID.includes(chip_id)) ERROR("Unrecognized Chip Id");
