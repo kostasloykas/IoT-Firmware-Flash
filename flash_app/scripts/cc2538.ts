@@ -119,11 +119,6 @@ export class CC2538 implements Command {
         ERROR("GetChipID:", err);
       });
 
-    // PRINT("Try to Ping");
-    // await this.Ping();
-    // PRINT("Bootloader pinged");
-    // return;
-
     // PRINT("Try to find informations about device");
     // this.FlashSize();
     // PRINT("Informations received");
@@ -144,9 +139,9 @@ export class CC2538 implements Command {
     // PRINT("Download configured");
     // return;
 
-    PRINT("Try to reset device");
-    this.Reset();
-    PRINT("Device has been reset");
+    // PRINT("Try to reset device");
+    // await this.Reset();
+    // PRINT("Device has been reset");
 
     // this.ClosePort() // Close port
     //   .catch((err) => {
@@ -313,10 +308,12 @@ export class CC2538 implements Command {
 
     this.GetStatus();
   }
+
   //   TODO:
-  Run(...params: any): void {
+  Run(): void {
     throw new Error("Method not implemented.");
   }
+
   //   FIXME: Get status
   async GetStatus(): Promise<number> {
     let data: Uint8Array = this.encoder.encode([0x23]);
@@ -379,7 +376,7 @@ export class CC2538 implements Command {
   }
 
   //   FIXME: Reset
-  Reset(): void {
+  async Reset() {
     let data: Uint8Array = this.encoder.encode([0x25]);
     let packet: Packet = new Packet(data);
 
@@ -430,6 +427,9 @@ export class CC2538 implements Command {
         if (!this.CHIP_ID.includes(chip_id)) ERROR("Unrecognized Chip Id");
       })
       .catch((err) => ERROR("GetChipID:", err));
+
+    // FIXME: get status
+    // await this.GetStatus();
 
     assert(chip_id != null, "Chip Id must be != null");
     return chip_id;
