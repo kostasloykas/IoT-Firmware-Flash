@@ -31,6 +31,7 @@ export interface Command {
   Download(...params: any): void;
   Run(...params: any): void;
   GetStatus(...params: any): void;
+  CheckIfStatusIsSuccess(...params: any): void;
   Ping(...params: any): void;
   SendData(...params: any): void;
   Write(...params: any): void;
@@ -38,7 +39,6 @@ export interface Command {
   Erase(...params: any): void;
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
-  CheckLastCommand(...params: any): void;
   ConfigureCCA(...params: any): void;
   FlashSize(...params: any): void;
 }

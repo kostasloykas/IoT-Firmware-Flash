@@ -1,16 +1,4 @@
-import { buffer } from "stream/consumers";
-import {
-  ACK,
-  DEBUG,
-  ERROR,
-  FirmwareFile,
-  NACK,
-  PRINT,
-  Packet,
-  RESPOND as RESPONSE,
-  assert,
-  Command,
-} from "./library";
+import { ACK, DEBUG, ERROR, FirmwareFile, NACK, PRINT, Packet, RESPOND, assert, Command } from "./library";
 
 enum VERSION_CC2538 {
   _512_KB,
@@ -223,8 +211,13 @@ export class CC2538 implements Command {
 
     let packet: Packet = new Packet(data);
 
-    if (packet.Checksum !== checksum) return null;
-    return packet;
+    if (packet.Checksum !== checksum) {
+      this.SendNAck();
+      return null;
+    } else {
+      this.SendAck();
+      return packet;
+    }
   }
 
   // Send Sync
@@ -318,36 +311,45 @@ export class CC2538 implements Command {
   async GetStatus(): Promise<number> {
     let data: Uint8Array = this.encoder.encode([0x23]);
     let packet: Packet = new Packet(data);
+    let response: number = null;
 
-    this.Write(packet).catch((err) => {
+    await this.Write(packet).catch((err) => {
       ERROR("GetStatus:", err);
     });
 
-    this.WaitForAck().catch((err) => {
-      ERROR("GetStatus:", err);
-    });
+    await this.WaitForAck()
+      .then((response: number) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("GetStatus:", err);
+      });
 
-    packet = await this.ReceivePacket();
-    // FIXME: response return
-    return RESPONSE.COMMAND_RET_FLASH_FAIL;
+    await this.ReceivePacket()
+      .then((packet: Packet) => {
+        if (packet == null) throw new Error("Packet was corrupted");
+        else {
+          DEBUG("Packet came:", packet);
+          response = packet.Data[0];
+        }
+      })
+      .catch((err) => {
+        ERROR("GetStatus:", err);
+      });
+
+    assert(response != null, "response must be != null");
+    return response;
   }
-  //   FIXME: Ping
+
+  // Check status
+  CheckIfStatusIsSuccess(status: number): void {
+    if (status != RESPOND.COMMAND_RET_SUCCESS) {
+      ERROR("Status is unsuccessful with status ", status);
+    }
+  }
+
+  // Ping
   Ping(): void {
-    let data: Uint8Array = this.encoder.encode([0x20]);
-    let packet: Packet = new Packet(data);
-
-    this.Write(packet).catch((err) => {
-      ERROR("Ping:", err);
-    });
-
-    // wait for ack
-    this.WaitForAck().catch((err) => {
-      ERROR("Ping", err);
-    });
-  }
-
-  // TODO:
-  CheckLastCommand(): void {
     throw new Error("Method not implemented.");
   }
 
@@ -415,21 +417,16 @@ export class CC2538 implements Command {
     // receive packet
     await this.ReceivePacket()
       .then((packet: Packet) => {
-        if (packet == null) {
-          this.SendNAck(); //send ACK
-          throw new Error("Packet was corrupted");
-        } else {
-          this.SendAck(); //send NACK
-          DEBUG("Packet came:", packet);
-        }
+        if (packet == null) throw new Error("Packet was corrupted");
+        else DEBUG("Packet came:", packet);
 
         chip_id = ((packet.Data[2] << 8) | packet.Data[3]) as number;
         if (!this.CHIP_ID.includes(chip_id)) ERROR("Unrecognized Chip Id");
       })
       .catch((err) => ERROR("GetChipID:", err));
 
-    // FIXME: get status
-    // await this.GetStatus();
+    // Check commands status
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
 
     assert(chip_id != null, "Chip Id must be != null");
     return chip_id;
