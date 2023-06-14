@@ -1,5 +1,6 @@
 /node_modules/
 /public/build/
+# FIXME: python removes
 /src/cc2538-bsl.py
 
 .DS_Store
