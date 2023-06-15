@@ -123,20 +123,24 @@ export class CC2538 implements Command {
     // PRINT("Erase Done");
     // return;
 
-    PRINT("Try to Flash Image");
-    await this.WriteFlash(image);
-    return;
-
-    PRINT("Try to Download");
-    await this.Download(image.Size)
+    // FIXME:
+    PRINT("Try to write image in flash");
+    await this.WriteFlash(this.start_address, image)
       .then(() => {
-        PRINT("Download command executed successfully");
+        PRINT("Image succesfully written to flash");
       })
       .catch((err) => {
-        ERROR("Download:", err);
+        ERROR("WriteFlash:", err);
       });
 
-    PRINT("Download configured");
+    // PRINT("Try to Download");
+    // await this.Download(image.Size)
+    //   .then(() => {
+    //     PRINT("Download command executed successfully");
+    //   })
+    //   .catch((err) => {
+    //     ERROR("Download:", err);
+    //   });
 
     PRINT("Try to reset device");
     await this.Reset()
@@ -290,17 +294,42 @@ export class CC2538 implements Command {
   }
 
   // FIXME:WriteFlash
-  async WriteFlash(image: FirmwareFile) {}
+  async WriteFlash(start_address: number, image: FirmwareFile) {}
 
-  //   TODO:SendData
-  SendData(...params: any): void {
-    throw new Error("Method not implemented.");
+  // FIXME:SendData
+  // @returns {bollean} if needs to retransmit data
+  async SendData(data: Uint8Array): Promise<boolean> {
+    let response: number = null;
+    assert(data.length <= 252, "Data must be <= 252, the size is ".concat(data.length.toString()));
+    // create the array that contains command number and the data
+    let array: Uint8Array = new Uint8Array(data.length + 1); //253 bytes
+    array.set(data, 1);
+    array[0] = 0x24;
+    let packet = new Packet(array);
+
+    await this.Write(packet).catch((err) => {
+      ERROR("SendData:", err);
+    });
+
+    await this.WaitForAck()
+      .then((res: number) => {
+        response = res;
+      })
+      .catch((err) => {
+        ERROR("SendData:", err);
+      });
+
+    if (response == NACK) return true;
+    else {
+      this.CheckIfStatusIsSuccess(await this.GetStatus());
+      return false;
+    }
   }
 
   //   FIXME: Download
-  async Download(size_of_data: number) {
+  async Download(start_address: number, size_of_data: number) {
     assert(size_of_data % 4 == 0, "Size must be multiple of 4");
-    let addr = this.encoder.encode_addr(this.start_address);
+    let addr = this.encoder.encode_addr(start_address);
     let size = this.encoder.encode_addr(size_of_data);
     // TODO: check if the image size it fits in flash
     // memory of device
@@ -371,7 +400,7 @@ export class CC2538 implements Command {
   // Check status
   CheckIfStatusIsSuccess(status: number): void {
     if (status != RESPOND.COMMAND_RET_SUCCESS) {
-      ERROR("Status is unsuccessful with status ", status);
+      ERROR("GetStatus is unsuccessful with status ", status);
     }
   }
 
