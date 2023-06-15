@@ -127,14 +127,15 @@ export class CC2538 implements Command {
 
     return;
 
+    // FIXME: Configure CCA
     // PRINT("Try to configure CCA");
     // this.ConfigureCCA();
     // PRINT("CCA configured");
-    // return;
 
-    PRINT("Try to Erase flash memory");
-    await this.Erase();
-    PRINT("Erase Done");
+    // FIXME: Erase flash memory
+    // PRINT("Try to Erase flash memory");
+    // await this.Erase();
+    // PRINT("Erase Done");
 
     PRINT("Try to write image in flash");
     await this.WriteFlash(this.start_address, image.FirmwareBytes)
@@ -145,15 +146,6 @@ export class CC2538 implements Command {
         ERROR("WriteFlash:", err);
       });
 
-    // PRINT("Try to Download");
-    // await this.Download(image.Size)
-    //   .then(() => {
-    //     PRINT("Download command executed successfully");
-    //   })
-    //   .catch((err) => {
-    //     ERROR("Download:", err);
-    //   });
-
     PRINT("Try to reset device");
     await this.Reset()
       .then(() => {
@@ -163,7 +155,7 @@ export class CC2538 implements Command {
         ERROR("Reset", err);
       });
 
-    await this.ClosePort() // Close port
+    await this.ClosePort()
       .then(() => {
         PRINT("Port closed successfully");
       })
