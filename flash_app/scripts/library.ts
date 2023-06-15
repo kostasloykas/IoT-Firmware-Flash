@@ -66,11 +66,15 @@ export class FirmwareFile {
 
   public constructor(input_element: HTMLInputElement) {
     this.CheckFileExtention(input_element.files[0].name);
-    this.ConvertFirmwareToBytes(input_element).then((bytes) => {
-      this.firmware_bytes = bytes;
-      DEBUG(bytes);
-      this.size = this.firmware_bytes.length;
-    });
+    this.ConvertFirmwareToBytes(input_element)
+      .then((bytes) => {
+        this.firmware_bytes = bytes;
+        DEBUG(bytes);
+        this.size = this.firmware_bytes.length;
+      })
+      .catch((err) => {
+        ERROR("ConvertFirmwareToBytes", err);
+      });
   }
 
   // Check file extention
@@ -80,7 +84,7 @@ export class FirmwareFile {
   }
 
   // Convert firmware to bytes
-  private ConvertFirmwareToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
+  private async ConvertFirmwareToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
     return new Promise<Uint8Array>((resolve, reject) => {
       const reader = new FileReader();
 
@@ -101,6 +105,10 @@ export class FirmwareFile {
 
   public get Size(): number {
     return this.size;
+  }
+
+  public get FirmwareBytes(): Uint8Array {
+    return this.firmware_bytes;
   }
 }
 

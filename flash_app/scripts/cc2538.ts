@@ -118,14 +118,13 @@ export class CC2538 implements Command {
     // PRINT("CCA configured");
     // return;
 
-    // PRINT("Try to Erase");
-    // this.Erase();
-    // PRINT("Erase Done");
-    // return;
+    return;
+    PRINT("Try to Erase flash memory");
+    await this.Erase();
+    PRINT("Erase Done");
 
-    // FIXME:
     PRINT("Try to write image in flash");
-    await this.WriteFlash(this.start_address, image)
+    await this.WriteFlash(this.start_address, image.FirmwareBytes)
       .then(() => {
         PRINT("Image succesfully written to flash");
       })
@@ -190,10 +189,45 @@ export class CC2538 implements Command {
   //   TODO:
   ConfigureCCA() {}
 
-  //   TODO:
-  MemoryWrite(...params: any): void {
-    throw new Error("Method not implemented.");
+  //   FIXME: WriteFlash
+  async WriteFlash(address: number, image: Uint8Array) {
+    let from: number = 0;
+    let to: number = from + 252;
+    let retry: number = 3; // max times to resend a packet if bootloader return NAck
+
+    while (true) {
+      let data: Uint8Array = image.slice(from, to); //take data (from-to)
+
+      // send maximum 252 data
+      assert(data.length <= 252, "length must be <= 252");
+
+      // if data finished break
+      if (data.length == 0) break;
+
+      // start flashing
+      while (retry > 0) {
+        this.Download(address, data.length).catch((err) => {
+          ERROR("WriteFlash", err);
+        });
+        this.SendData(data)
+          .then((needs_to_try_again: boolean) => {
+            // if doesn't need to try again then break
+            if (!needs_to_try_again) retry = 0;
+          })
+          .catch((err) => {
+            ERROR("WriteFlash", err);
+          });
+
+        retry--;
+      }
+
+      from += 252;
+      to += 252;
+      address += 252;
+      retry = 3;
+    }
   }
+
   //   TODO:
   MemoryRead(...params: any): void {
     throw new Error("Method not implemented.");
@@ -293,9 +327,6 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME:WriteFlash
-  async WriteFlash(start_address: number, image: FirmwareFile) {}
-
   // FIXME:SendData
   // @returns {bollean} if needs to retransmit data
   async SendData(data: Uint8Array): Promise<boolean> {
@@ -331,8 +362,6 @@ export class CC2538 implements Command {
     assert(size_of_data % 4 == 0, "Size must be multiple of 4");
     let addr = this.encoder.encode_addr(start_address);
     let size = this.encoder.encode_addr(size_of_data);
-    // TODO: check if the image size it fits in flash
-    // memory of device
     let data: Uint8Array = this.encoder.encode([
       0x21,
       addr[0],
@@ -361,7 +390,6 @@ export class CC2538 implements Command {
     this.CheckIfStatusIsSuccess(await this.GetStatus());
   }
 
-  //   TODO:
   Run(): void {
     throw new Error("Method not implemented.");
   }
@@ -404,6 +432,9 @@ export class CC2538 implements Command {
     }
   }
 
+  async MemoryWrite(...params: any) {
+    throw new Error("Method not implemented.");
+  }
   // Ping
   Ping(): void {
     throw new Error("Method not implemented.");
@@ -443,7 +474,7 @@ export class CC2538 implements Command {
       });
   }
   //   TODO:
-  Erase(...params: any): void {
+  async Erase(...params: any) {
     throw new Error("Method not implemented.");
   }
 
