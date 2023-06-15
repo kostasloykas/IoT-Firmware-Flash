@@ -42,6 +42,8 @@ export interface Command {
   ConfigureCCA(...params: any): void;
   FlashSize(...params: any): void;
   WriteFlash(...params: any): void;
+  IsBootloaderEnabled(...params: any): void;
+  IsImageValid(...params: any): void;
 }
 
 // ============================= CLASSES =============================

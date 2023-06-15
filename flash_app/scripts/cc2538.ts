@@ -108,17 +108,30 @@ export class CC2538 implements Command {
         ERROR("GetChipID:", err);
       });
 
-    // PRINT("Try to find informations about device");
-    // this.FlashSize();
-    // PRINT("Informations received");
-    // return;
+    PRINT("Try to find informations about device");
+    await this.FlashSize();
+
+    await this.IsBootloaderEnabled()
+      .then((is_enabled: boolean) => {
+        if (is_enabled) PRINT("Bootloader is enabled");
+        else PRINT("Bootloader is disabled");
+      })
+      .catch((err) => ERROR("IsBootloaderEnabled", err));
+
+    await this.IsImageValid()
+      .then((is_valid: boolean) => {
+        if (is_valid) PRINT("Image is valid");
+        else PRINT("Image is not valid");
+      })
+      .catch((err) => ERROR("IsImageValid", err));
+
+    return;
 
     // PRINT("Try to configure CCA");
     // this.ConfigureCCA();
     // PRINT("CCA configured");
     // return;
 
-    return;
     PRINT("Try to Erase flash memory");
     await this.Erase();
     PRINT("Erase Done");
@@ -161,7 +174,18 @@ export class CC2538 implements Command {
     return;
   }
 
-  FlashSize(): void {
+  // TODO:IsBootloaderEnabled
+  async IsBootloaderEnabled(): Promise<boolean> {
+    throw new Error("Method not implemented.");
+  }
+
+  // TODO:IsImageValid
+  async IsImageValid(): Promise<boolean> {
+    throw new Error("Method not implemented.");
+  }
+
+  // TODO:FlashSize
+  async FlashSize() {
     throw new Error("Method not implemented.");
   }
 
@@ -455,7 +479,7 @@ export class CC2538 implements Command {
     }
   }
 
-  //   FIXME: Reset
+  // Reset
   async Reset() {
     let data: Uint8Array = this.encoder.encode([0x25]);
     let packet: Packet = new Packet(data);
@@ -473,6 +497,7 @@ export class CC2538 implements Command {
         ERROR("Reset", err);
       });
   }
+
   //   TODO:
   async Erase(...params: any) {
     throw new Error("Method not implemented.");
