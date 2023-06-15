@@ -41,6 +41,7 @@ export interface Command {
   SetXOSC(...params: any): void;
   ConfigureCCA(...params: any): void;
   FlashSize(...params: any): void;
+  WriteFlash(...params: any): void;
 }
 
 // ============================= CLASSES =============================

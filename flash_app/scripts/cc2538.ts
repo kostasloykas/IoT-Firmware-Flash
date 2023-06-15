@@ -1,3 +1,4 @@
+import { error } from "console";
 import { ACK, DEBUG, ERROR, FirmwareFile, NACK, PRINT, Packet, RESPOND, assert, Command } from "./library";
 
 enum VERSION_CC2538 {
@@ -49,7 +50,7 @@ export class CC2538 implements Command {
   decoder: Decoder;
   filters: object = {
     dataBits: 8,
-    baudRate: 460800, //maximum 115200 , 460800
+    baudRate: 460800, //maximum 460800 , 115200
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
@@ -59,7 +60,7 @@ export class CC2538 implements Command {
   start_address: number = 0x00200000; //start address of flashing
   FLASH_CTRL_DIECFG0: number = 0x400d3014;
 
-  // TODO: Flash firmware
+  // FIXME: FlashFirmware
   async FlashFirmware(port: any, image: FirmwareFile) {
     // Initialize
     this.port = port;
@@ -122,19 +123,37 @@ export class CC2538 implements Command {
     // PRINT("Erase Done");
     // return;
 
-    // PRINT("Try to Download");
-    // this.Download(image.Size);
-    // PRINT("Download configured");
-    // return;
+    PRINT("Try to Flash Image");
+    await this.WriteFlash(image);
+    return;
 
-    // PRINT("Try to reset device");
-    // await this.Reset();
-    // PRINT("Device has been reset");
+    PRINT("Try to Download");
+    await this.Download(image.Size)
+      .then(() => {
+        PRINT("Download command executed successfully");
+      })
+      .catch((err) => {
+        ERROR("Download:", err);
+      });
 
-    // this.ClosePort() // Close port
-    //   .catch((err) => {
-    //     ERROR("Port can't be closed ", err);
-    //   });
+    PRINT("Download configured");
+
+    PRINT("Try to reset device");
+    await this.Reset()
+      .then(() => {
+        PRINT("Device has been reset");
+      })
+      .catch((err) => {
+        ERROR("Reset", err);
+      });
+
+    await this.ClosePort() // Close port
+      .then(() => {
+        PRINT("Port closed successfully");
+      })
+      .catch((err) => {
+        ERROR("Port can't be closed ", err);
+      });
 
     return;
   }
@@ -150,18 +169,18 @@ export class CC2538 implements Command {
     await this.port.setSignals({ requestToSend: false });
     await new Promise((resolve) => setTimeout(resolve, 10)); // Wait for some time
     await this.port.setSignals({ dataTerminalReady: false });
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for some time
+    await new Promise((resolve) => setTimeout(resolve, 50)); // Wait for some time
   }
 
   // Open port
   async OpenPort() {
     await this.port.open(this.filters);
   }
+  // ClosePort
   async ClosePort() {
-    await this.reader.close();
-    await this.writer.close();
+    await this.reader.releaseLock();
+    await this.writer.releaseLock();
     await this.port.close();
-    PRINT("Port closed");
   }
 
   //   TODO:
@@ -260,24 +279,31 @@ export class CC2538 implements Command {
       });
 
     if (data[0] == 0x00 && data[1] == ACK) return ACK;
-    else if (data[0] == 0x00 && data[1] == NACK) NACK;
+    else if (data[0] == 0x00 && data[1] == NACK) return NACK;
 
     throw Error("Unrecognized response (neither ACK nor NACK)");
   }
 
-  //   TODO:
-  SendData(...params: any): void {
-    throw new Error("Method not implemented.");
-  }
-  //   TODO:
+  //   TODO:CRC32
   CRC32(...params: any): void {
     throw new Error("Method not implemented.");
   }
+
+  // FIXME:WriteFlash
+  async WriteFlash(image: FirmwareFile) {}
+
+  //   TODO:SendData
+  SendData(...params: any): void {
+    throw new Error("Method not implemented.");
+  }
+
   //   FIXME: Download
-  Download(image_size: number): void {
+  async Download(size_of_data: number) {
+    assert(size_of_data % 4 == 0, "Size must be multiple of 4");
     let addr = this.encoder.encode_addr(this.start_address);
-    let size = this.encoder.encode_addr(image_size);
-    // let encode_size = ;
+    let size = this.encoder.encode_addr(size_of_data);
+    // TODO: check if the image size it fits in flash
+    // memory of device
     let data: Uint8Array = this.encoder.encode([
       0x21,
       addr[0],
@@ -291,15 +317,19 @@ export class CC2538 implements Command {
     ]);
     let packet: Packet = new Packet(data);
 
-    this.Write(packet).catch((err) => {
+    await this.Write(packet).catch((err) => {
       ERROR("Download:", err);
     });
 
-    this.WaitForAck().catch((err) => {
-      ERROR("Download:", err);
-    });
+    await this.WaitForAck()
+      .then((response: number) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("Download:", err);
+      });
 
-    this.GetStatus();
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
   }
 
   //   TODO:
@@ -350,20 +380,11 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: Write
+  // Write
   async Write(data: Uint8Array | Packet) {
     // if data are bytes
-
     if (data instanceof Uint8Array) {
-      assert(data.length <= 254, "data length must be <= 254");
-      // if (data.length>254){
-      //   let start: number = 0;
-      //   let end: number = 0;
-      //   for (let index = 0; index < data.length; index += 254) {
-      //     let packet: Packet = new Packet(data.slice(index, index + 254));
-      //     await this.writer.write(packet);
-      //     start = index;
-      //   }else
+      assert(data.length <= 253, "data length must be <= 253");
       await this.writer.write(data);
       // if data is packet
     } else if (data instanceof Packet) {
@@ -379,14 +400,18 @@ export class CC2538 implements Command {
     let data: Uint8Array = this.encoder.encode([0x25]);
     let packet: Packet = new Packet(data);
 
-    this.Write(packet).catch((err) => {
+    await this.Write(packet).catch((err) => {
       ERROR("Reset:", err);
     });
 
     // wait for ack
-    this.WaitForAck().catch((err) => {
-      ERROR("Reset", err);
-    });
+    await this.WaitForAck()
+      .then((response) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("Reset", err);
+      });
   }
   //   TODO:
   Erase(...params: any): void {
