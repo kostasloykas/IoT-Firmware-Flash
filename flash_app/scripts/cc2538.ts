@@ -36,10 +36,10 @@ class Encoder {
   // encodes the address in the MSB
   public encode_addr(address: number): number[] {
     assert(address <= 2 ** 32, "Encoder: number must be <= 4 byte");
-    let byte4: number = address >> 0 && 0xff;
-    let byte3: number = address >> 8 && 0xff;
-    let byte2: number = address >> 16 && 0xff;
-    let byte1: number = address >> 24 && 0xff;
+    let byte4: number = (address >> 0) & 0xff;
+    let byte3: number = (address >> 8) & 0xff;
+    let byte2: number = (address >> 16) & 0xff;
+    let byte1: number = (address >> 24) & 0xff;
     return [byte1, byte2, byte3, byte4];
   }
 }
@@ -209,7 +209,6 @@ export class CC2538 implements Command {
   // FIXME: Verify
   async Verify(image: FirmwareFile) {
     let crc32_local: number = image.CRC32;
-    DEBUG(crc32_local);
     let crc32_remote: number = null;
     await this.CRC32(this.start_address, image.Size)
       .then((crc32: number) => {
@@ -406,8 +405,8 @@ export class CC2538 implements Command {
       ERROR("CRC32:", err);
     });
 
-    // wait for ack 25 seconds
-    await this.WaitForAck(25000)
+    // wait for ack 5 seconds
+    await this.WaitForAck(5000)
       .then((response: number) => {
         assert(response == ACK, "response must be ACK");
       })
@@ -419,15 +418,15 @@ export class CC2538 implements Command {
     await this.ReceivePacket()
       .then((packet: Packet) => {
         if (packet == null) throw new Error("Packet was corrupted");
-        crc32_remote = ((packet.Data[0] << 24) |
-          (packet.Data[1] << 16) |
-          (packet.Data[2] << 8) |
-          packet.Data[3]) as number;
+        crc32_remote = ((packet.Data[3] << 24) |
+          (packet.Data[2] << 16) |
+          (packet.Data[1] << 8) |
+          (packet.Data[0] << 0)) as number;
       })
       .catch((err) => ERROR("CRC32:", err));
 
     this.CheckIfStatusIsSuccess(await this.GetStatus());
-    DEBUG("command checked");
+
     assert(crc32_remote != null, "crc32 from device must be != null");
     return crc32_remote;
   }

@@ -77,6 +77,7 @@ export class FirmwareFile {
         this.firmware_bytes = bytes;
         DEBUG(bytes);
         this.size = this.firmware_bytes.length;
+        this.CalculateCRC32();
       })
       .catch((err) => {
         ERROR("ConvertFirmwareToBytes", err);
@@ -109,8 +110,11 @@ export class FirmwareFile {
     });
   }
 
-  public get CRC32(): number {
+  private CalculateCRC32() {
     this.crc32 = crc32.buf(this.firmware_bytes);
+  }
+
+  public get CRC32(): number {
     return this.crc32;
   }
 
@@ -172,6 +176,7 @@ export const NACK = 0x33;
 export enum FILE_EXTENTION {
   HEX = "hex",
   BIN = "bin",
+  ELF = "elf",
 }
 
 // ============================= FUNCTIONS =============================
