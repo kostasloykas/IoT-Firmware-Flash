@@ -139,7 +139,6 @@ export class CC2538 implements Command {
     //     else PRINT("Image is not valid");
     //   })
     //   .catch((err) => ERROR("IsImageValid", err));
-
     UpdateProgressBar("50%");
 
     // PRINT("Try to configure CCA");
@@ -149,6 +148,7 @@ export class CC2538 implements Command {
     // PRINT("Try to Erase flash memory");
     // await this.Erase();
     // PRINT("Erase Done");
+    UpdateProgressBar("60%");
 
     // PRINT("Try to write image in flash");
     // await this.WriteFlash(this.start_address, image.FirmwareBytes)
@@ -158,6 +158,7 @@ export class CC2538 implements Command {
     //   .catch((err) => {
     //     ERROR("WriteFlash:", err);
     //   });
+    UpdateProgressBar("70%");
 
     PRINT("Try to verify firmware");
     await this.Verify(image)
@@ -206,7 +207,7 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: Verify
+  // Verify
   async Verify(image: FirmwareFile) {
     let crc32_local: number = image.CRC32;
     let crc32_remote: number = null;
@@ -382,7 +383,7 @@ export class CC2538 implements Command {
     throw Error("Unrecognized response (neither ACK nor NACK)");
   }
 
-  //   FIXME:CRC32
+  // CRC32
   async CRC32(start_address: number, number_of_bytes: number): Promise<number> {
     let crc32_remote: number = null;
     let addr = this.encoder.encode_addr(start_address);
@@ -418,10 +419,11 @@ export class CC2538 implements Command {
     await this.ReceivePacket()
       .then((packet: Packet) => {
         if (packet == null) throw new Error("Packet was corrupted");
-        crc32_remote = ((packet.Data[3] << 24) |
-          (packet.Data[2] << 16) |
-          (packet.Data[1] << 8) |
-          (packet.Data[0] << 0)) as number;
+        // decode crc32
+        crc32_remote = ((packet.Data[0] << 24) |
+          (packet.Data[1] << 16) |
+          (packet.Data[2] << 8) |
+          (packet.Data[3] << 0)) as number;
       })
       .catch((err) => ERROR("CRC32:", err));
 
