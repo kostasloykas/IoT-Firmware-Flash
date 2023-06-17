@@ -1,4 +1,5 @@
 /* library.ts */
+import $ from "jquery";
 
 declare global {
   interface Navigator {
@@ -181,6 +182,11 @@ export function ERROR(...anything: any): void {
 
 export function DEBUG(...anything: any): void {
   console.log("DEBUG", anything);
+}
+
+export function UpdateProgressBar(percentage: string): void {
+  let progress_bar = $("#bar");
+  progress_bar.css("width", percentage);
 }
 
 // Assertions to ensure that certain conditions or

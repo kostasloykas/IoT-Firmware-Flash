@@ -1,5 +1,16 @@
-import { error } from "console";
-import { ACK, DEBUG, ERROR, FirmwareFile, NACK, PRINT, Packet, RESPOND, assert, Command } from "./library";
+import {
+  ACK,
+  DEBUG,
+  ERROR,
+  FirmwareFile,
+  NACK,
+  PRINT,
+  Packet,
+  RESPOND,
+  assert,
+  Command,
+  UpdateProgressBar,
+} from "./library";
 
 enum VERSION_CC2538 {
   _512_KB,
@@ -76,6 +87,7 @@ export class CC2538 implements Command {
       .catch((error) => {
         ERROR("OpenPort:", error);
       });
+    UpdateProgressBar("10%");
 
     PRINT("Try to invoke bootloader");
     await this.InvokeBootloader() //Invoke bootloader
@@ -85,6 +97,7 @@ export class CC2538 implements Command {
       .then(() => {
         PRINT("Bootloader Invoked");
       });
+    UpdateProgressBar("20%");
 
     //  initialize buffers
     this.reader = this.port.readable.getReader({ mode: "byob" });
@@ -98,6 +111,7 @@ export class CC2538 implements Command {
       .catch((err) => {
         ERROR("SendSynch:", err);
       });
+    UpdateProgressBar("30%");
 
     PRINT("Try to get Chip Id");
     await this.GetChipID()
@@ -107,25 +121,26 @@ export class CC2538 implements Command {
       .catch((err) => {
         ERROR("GetChipID:", err);
       });
+    UpdateProgressBar("40%");
 
     PRINT("Try to find informations about device");
-    await this.FlashSize();
+    // await this.FlashSize();
 
-    await this.IsBootloaderEnabled()
-      .then((is_enabled: boolean) => {
-        if (is_enabled) PRINT("Bootloader is enabled");
-        else PRINT("Bootloader is disabled");
-      })
-      .catch((err) => ERROR("IsBootloaderEnabled", err));
+    // await this.IsBootloaderEnabled()
+    //   .then((is_enabled: boolean) => {
+    //     if (is_enabled) PRINT("Bootloader is enabled");
+    //     else PRINT("Bootloader is disabled");
+    //   })
+    //   .catch((err) => ERROR("IsBootloaderEnabled", err));
 
-    await this.IsImageValid()
-      .then((is_valid: boolean) => {
-        if (is_valid) PRINT("Image is valid");
-        else PRINT("Image is not valid");
-      })
-      .catch((err) => ERROR("IsImageValid", err));
+    // await this.IsImageValid()
+    //   .then((is_valid: boolean) => {
+    //     if (is_valid) PRINT("Image is valid");
+    //     else PRINT("Image is not valid");
+    //   })
+    //   .catch((err) => ERROR("IsImageValid", err));
 
-    return;
+    UpdateProgressBar("50%");
 
     // FIXME: Configure CCA
     // PRINT("Try to configure CCA");
@@ -137,14 +152,14 @@ export class CC2538 implements Command {
     // await this.Erase();
     // PRINT("Erase Done");
 
-    PRINT("Try to write image in flash");
-    await this.WriteFlash(this.start_address, image.FirmwareBytes)
-      .then(() => {
-        PRINT("Image succesfully written to flash");
-      })
-      .catch((err) => {
-        ERROR("WriteFlash:", err);
-      });
+    // PRINT("Try to write image in flash");
+    // await this.WriteFlash(this.start_address, image.FirmwareBytes)
+    //   .then(() => {
+    //     PRINT("Image succesfully written to flash");
+    //   })
+    //   .catch((err) => {
+    //     ERROR("WriteFlash:", err);
+    //   });
 
     PRINT("Try to reset device");
     await this.Reset()
@@ -154,6 +169,7 @@ export class CC2538 implements Command {
       .catch((err) => {
         ERROR("Reset", err);
       });
+    UpdateProgressBar("90%");
 
     await this.ClosePort()
       .then(() => {
@@ -162,6 +178,7 @@ export class CC2538 implements Command {
       .catch((err) => {
         ERROR("Port can't be closed ", err);
       });
+    UpdateProgressBar("100%");
 
     return;
   }

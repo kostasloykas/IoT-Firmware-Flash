@@ -2,7 +2,6 @@
 import $ from "jquery";
 import * as lib from "./library";
 import { CC2538 } from "./cc2538";
-import { ERROR } from "./library";
 
 // ==================== VARIABLES =========================
 
@@ -30,9 +29,9 @@ function Alert(message: string, type_of_alert: string, duration: number = 4000) 
   }, duration);
 }
 
-function UpdateProgressBar(percentage: string): void {
-  let progress_bar = $("#bar");
-  progress_bar.css("width", percentage);
+// update page
+function UpdatePage() {
+  ReleaseFlashButton();
 }
 
 function ReleaseFlashButton(): void {
@@ -43,7 +42,7 @@ function ReleaseFlashButton(): void {
 function CheckForSerialNavigator(): void {
   // Web Serial API is not available
   if (!("serial" in navigator)) {
-    ERROR("Web Serial API is not available");
+    lib.ERROR("Web Serial API is not available");
   }
 }
 
@@ -97,7 +96,6 @@ window.addEventListener("load", function () {
     alert(event.reason); // the unhandled error object
     Alert("Flash canceled", "danger");
     ReleaseFlashButton();
-    UpdateProgressBar("0%");
   });
 });
 
@@ -107,7 +105,7 @@ async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
   let port: any = null;
 
-  UpdateProgressBar("0%");
+  lib.UpdateProgressBar("0%");
 
   // Prompt user to select any serial port.
   await navigator.serial
@@ -121,7 +119,7 @@ async function Main() {
           to flash the firmware",
         "danger"
       );
-      ERROR("Request port: ", error);
+      lib.ERROR("Request port: ", error);
       ReleaseFlashButton();
       return;
     });
@@ -141,7 +139,6 @@ async function Main() {
 
   await device.FlashFirmware(port, image);
   Alert("The process finished succsfully", "success");
-  ReleaseFlashButton();
-
+  UpdatePage(); // update page after flashing
   return;
 }
