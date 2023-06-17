@@ -30,12 +30,24 @@ function Alert(message: string, type_of_alert: string, duration: number = 4000) 
   }, duration);
 }
 
+function UpdateProgressBar(percentage: string): void {
+  let progress_bar = $("#bar");
+  progress_bar.css("width", percentage);
+}
+
 function ReleaseFlashButton(): void {
   let flash_button = $("#flash_but");
   flash_button.prop("disabled", false);
 }
 
-export function InstanceOf(device: lib.Device): any {
+function CheckForSerialNavigator(): void {
+  // Web Serial API is not available
+  if (!("serial" in navigator)) {
+    ERROR("Web Serial API is not available");
+  }
+}
+
+function InstanceOf(device: lib.Device): any {
   let instance = null;
   SUPPORTED_DEVICES.forEach((value, key) => {
     if (key.equals(device)) {
@@ -48,7 +60,7 @@ export function InstanceOf(device: lib.Device): any {
 // ====================== ON LOAD OF PAGE ==================
 window.addEventListener("load", function () {
   // Check if browser support Web Serial Api
-  lib.CheckForSerialNavigator();
+  CheckForSerialNavigator();
 
   // ====================== EVENT LISTENERS ==================
   // event listener for flash firmware button
@@ -85,6 +97,7 @@ window.addEventListener("load", function () {
     alert(event.reason); // the unhandled error object
     Alert("Flash canceled", "danger");
     ReleaseFlashButton();
+    UpdateProgressBar("0%");
   });
 });
 
@@ -93,6 +106,8 @@ window.addEventListener("load", function () {
 async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
   let port: any = null;
+
+  UpdateProgressBar("0%");
 
   // Prompt user to select any serial port.
   await navigator.serial

@@ -14,7 +14,7 @@
       <span class="h2 fw-bold">Upload file</span>
       <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex , .bin" />
       <div class="progress mt-3 w-50 m-auto" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 10%" />
+        <div id="bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%" />
       </div>
       <div class="mt-4">
         <button id="flash_but" class=" btn btn-success">Flash firmware</button>

@@ -183,13 +183,6 @@ export function DEBUG(...anything: any): void {
   console.log("DEBUG", anything);
 }
 
-export function CheckForSerialNavigator(): void {
-  // Web Serial API is not available
-  if (!("serial" in navigator)) {
-    ERROR("Web Serial API is not available");
-  }
-}
-
 // Assertions to ensure that certain conditions or
 // assumptions hold true
 export function assert(condition: unknown, msg: string): asserts condition {
