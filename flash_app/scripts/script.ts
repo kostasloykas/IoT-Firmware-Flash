@@ -32,6 +32,7 @@ function Alert(message: string, type_of_alert: string, duration: number = 4000) 
 // update page
 function UpdatePage() {
   ReleaseFlashButton();
+  lib.UpdateProgressBar("0%");
 }
 
 function ReleaseFlashButton(): void {
@@ -95,7 +96,7 @@ window.addEventListener("load", function () {
   window.addEventListener("unhandledrejection", function (event) {
     alert(event.reason); // the unhandled error object
     Alert("Flash canceled", "danger");
-    ReleaseFlashButton();
+    UpdatePage();
   });
 });
 

@@ -1,5 +1,6 @@
 /* library.ts */
 import $ from "jquery";
+import crc32 from "crc-32";
 
 declare global {
   interface Navigator {
@@ -30,6 +31,7 @@ export interface Command {
   WaitForAck(...params: any): void;
   CRC32(...params: any): void;
   Download(...params: any): void;
+  Verify(...params: any): void;
   Run(...params: any): void;
   GetStatus(...params: any): void;
   CheckIfStatusIsSuccess(...params: any): void;
@@ -66,6 +68,7 @@ export class Device {
 export class FirmwareFile {
   private firmware_bytes: Uint8Array;
   private size: number;
+  private crc32: number;
 
   public constructor(input_element: HTMLInputElement) {
     this.CheckFileExtention(input_element.files[0].name);
@@ -104,6 +107,11 @@ export class FirmwareFile {
 
       reader.readAsArrayBuffer(input_element.files[0]);
     });
+  }
+
+  public get CRC32(): number {
+    this.crc32 = crc32.buf(this.firmware_bytes);
+    return this.crc32;
   }
 
   public get Size(): number {
@@ -160,7 +168,7 @@ export enum RESPOND {
 export const ACK = 0xcc;
 export const NACK = 0x33;
 
-// FIXME: supported file extentions
+// TODO: supported file extentions
 export enum FILE_EXTENTION {
   HEX = "hex",
   BIN = "bin",

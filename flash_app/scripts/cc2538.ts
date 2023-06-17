@@ -123,7 +123,7 @@ export class CC2538 implements Command {
       });
     UpdateProgressBar("40%");
 
-    PRINT("Try to find informations about device");
+    // PRINT("Try to find informations about device");
     // await this.FlashSize();
 
     // await this.IsBootloaderEnabled()
@@ -142,12 +142,10 @@ export class CC2538 implements Command {
 
     UpdateProgressBar("50%");
 
-    // FIXME: Configure CCA
     // PRINT("Try to configure CCA");
     // this.ConfigureCCA();
     // PRINT("CCA configured");
 
-    // FIXME: Erase flash memory
     // PRINT("Try to Erase flash memory");
     // await this.Erase();
     // PRINT("Erase Done");
@@ -160,6 +158,16 @@ export class CC2538 implements Command {
     //   .catch((err) => {
     //     ERROR("WriteFlash:", err);
     //   });
+
+    PRINT("Try to verify firmware");
+    await this.Verify(image)
+      .then(() => {
+        PRINT("Firmware verified");
+      })
+      .catch((err) => {
+        ERROR("Verify:", err);
+      });
+    UpdateProgressBar("80%");
 
     PRINT("Try to reset device");
     await this.Reset()
@@ -196,6 +204,25 @@ export class CC2538 implements Command {
   // TODO:FlashSize
   async FlashSize() {
     throw new Error("Method not implemented.");
+  }
+
+  // FIXME: Verify
+  async Verify(image: FirmwareFile) {
+    let crc32_local: number = image.CRC32;
+    DEBUG(crc32_local);
+    let crc32_remote: number = null;
+    await this.CRC32(this.start_address, image.Size)
+      .then((crc32: number) => {
+        crc32_remote = crc32;
+      })
+      .catch((err) => {
+        ERROR("Verify:", err);
+      });
+
+    assert(crc32_remote != null, "crc32_remote must be != null");
+
+    DEBUG("local=", crc32_local, "remote =", crc32_remote);
+    if (crc32_local != crc32_remote) throw new Error("crc32_local != crc32_remote");
   }
 
   // invoke bootloader
@@ -281,7 +308,8 @@ export class CC2538 implements Command {
     let checksum: number;
     let data: Uint8Array;
 
-    //read size and checksum
+    // read size and checksum
+    // here needs to wait in case crc32 response wait
     await this.ReadInto(new ArrayBuffer(2))
       .then((buffer) => {
         size = buffer[0];
@@ -341,9 +369,9 @@ export class CC2538 implements Command {
   }
 
   // Wait for ack
-  async WaitForAck(): Promise<number> {
+  async WaitForAck(time_to_wait: number = 100): Promise<number> {
     let data: Uint8Array = null;
-    await this.ReadInto(new ArrayBuffer(2)) //read 2 bytes
+    await this.ReadInto(new ArrayBuffer(2), time_to_wait) //read 2 bytes
       .then((array) => (data = array))
       .catch((err) => {
         ERROR("WaitForAck", err);
@@ -355,9 +383,53 @@ export class CC2538 implements Command {
     throw Error("Unrecognized response (neither ACK nor NACK)");
   }
 
-  //   TODO:CRC32
-  CRC32(...params: any): void {
-    throw new Error("Method not implemented.");
+  //   FIXME:CRC32
+  async CRC32(start_address: number, number_of_bytes: number): Promise<number> {
+    let crc32_remote: number = null;
+    let addr = this.encoder.encode_addr(start_address);
+    let size = this.encoder.encode_addr(number_of_bytes);
+    let data: Uint8Array = this.encoder.encode([
+      0x27, //command
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      size[0],
+      size[1],
+      size[2],
+      size[3],
+    ]);
+    let packet: Packet = new Packet(data);
+
+    // write packet
+    await this.Write(packet).catch((err) => {
+      ERROR("CRC32:", err);
+    });
+
+    // wait for ack 25 seconds
+    await this.WaitForAck(25000)
+      .then((response: number) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("CRC32:", err);
+      });
+
+    // receive packet
+    await this.ReceivePacket()
+      .then((packet: Packet) => {
+        if (packet == null) throw new Error("Packet was corrupted");
+        crc32_remote = ((packet.Data[0] << 24) |
+          (packet.Data[1] << 16) |
+          (packet.Data[2] << 8) |
+          packet.Data[3]) as number;
+      })
+      .catch((err) => ERROR("CRC32:", err));
+
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
+    DEBUG("command checked");
+    assert(crc32_remote != null, "crc32 from device must be != null");
+    return crc32_remote;
   }
 
   // FIXME:SendData
@@ -552,13 +624,13 @@ export class CC2538 implements Command {
   }
 
   // ReadInto
-  async ReadInto(buffer: ArrayBuffer) {
+  async ReadInto(buffer: ArrayBuffer, time_to_wait: number = 100) {
     let offset = 0;
 
     while (offset < buffer.byteLength) {
       let timeout = setTimeout(() => {
         ERROR("Read timeout occurred");
-      }, 100); // 100ms
+      }, time_to_wait);
 
       const { value, done } = await this.reader.read(new Uint8Array(buffer, offset));
       clearTimeout(timeout);
