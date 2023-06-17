@@ -221,7 +221,7 @@ export class CC2538 implements Command {
 
     assert(crc32_remote != null, "crc32_remote must be != null");
 
-    DEBUG("local=", crc32_local, "remote =", crc32_remote);
+    DEBUG("local_crc=", crc32_local, "remote_crc=", crc32_remote);
     if (crc32_local != crc32_remote) throw new Error("crc32_local != crc32_remote");
   }
 
@@ -433,7 +433,7 @@ export class CC2538 implements Command {
     return crc32_remote;
   }
 
-  // FIXME:SendData
+  // FIXME: SendData
   // @returns {bollean} if needs to retransmit data
   async SendData(data: Uint8Array): Promise<boolean> {
     let response: number = null;
