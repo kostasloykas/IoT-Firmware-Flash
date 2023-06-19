@@ -139,7 +139,6 @@ export class Packet {
   }
 
   public ComputeChecksum(): number {
-    // FIXME: const sum: number = this.data.reduce((sum, i) => sum + i && 0xff);
     const checksum: number = this.data.reduce((sum, i) => sum + i) % 256;
     return checksum;
   }
@@ -171,7 +170,6 @@ export enum RESPOND {
 export const ACK = 0xcc;
 export const NACK = 0x33;
 
-// TODO: supported file extentions
 export enum FILE_EXTENTION {
   HEX = "hex",
   BIN = "bin",

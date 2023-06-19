@@ -63,7 +63,7 @@ export class CC2538 implements Command {
   start_address_write: number = 0x00202000; //start address for writing the image
   FLASH_CTRL_DIECFG0: number = 0x400d3014;
 
-  // FIXME: FlashFirmware
+  // FlashFirmware
   async FlashFirmware(port: any, image: FirmwareFile) {
     // Initialize
     this.port = port;
@@ -102,7 +102,6 @@ export class CC2538 implements Command {
       .catch((err) => {
         ERROR("SendSynch:", err);
       });
-    UpdateProgressBar("30%");
 
     PRINT("Try to get Chip Id");
     await this.GetChipID()
@@ -112,7 +111,7 @@ export class CC2538 implements Command {
       .catch((err) => {
         ERROR("GetChipID:", err);
       });
-    UpdateProgressBar("40%");
+    UpdateProgressBar("30%");
 
     // PRINT("Try to find informations about device");
     // await this.FlashSize();
@@ -130,7 +129,7 @@ export class CC2538 implements Command {
     //     else PRINT("Image is not valid");
     //   })
     //   .catch((err) => ERROR("IsImageValid", err));
-    UpdateProgressBar("50%");
+    // UpdateProgressBar("50%");
 
     // PRINT("Try to configure CCA");
     // this.ConfigureCCA();
@@ -230,21 +229,23 @@ export class CC2538 implements Command {
   //   TODO:
   ConfigureCCA(): void {}
 
-  //   FIXME: WriteFlash
+  // WriteFlash
   async WriteFlash(address: number, image: Uint8Array) {
     address = 0x00202000;
     let from: number = 0;
-    let to: number = from + 248;
-    let lng: number = image.length;
+    let to: number = from + 252;
+    let remain_data_to_be_transfered: number = image.length;
     let download_needs: boolean = true;
 
+    // TODO: Check Backdoor of image
+
     // in order to skip empty data
-    let empty_data = new Uint8Array(248).fill(0xff);
+    let empty_data = new Uint8Array(252).fill(0xff);
 
     while (true) {
       let data: Uint8Array = image.slice(from, to); //take data (from-to)
-      // send maximum 248 data
-      assert(data.length <= 248, "length must be <= 248");
+      // send maximum 252 data
+      assert(data.length <= 252, "length must be <= 252");
 
       // if data finished break
       if (data.length == 0) break;
@@ -255,7 +256,7 @@ export class CC2538 implements Command {
       if (!are_equal) {
         if (download_needs) {
           // download
-          await this.Download(address, lng).catch((err) => {
+          await this.Download(address, remain_data_to_be_transfered).catch((err) => {
             ERROR("WriteFlash", err);
           });
           download_needs = false;
@@ -268,10 +269,10 @@ export class CC2538 implements Command {
         download_needs = true;
       }
 
-      from += 248;
-      to += 248;
-      address += 248;
-      lng -= 248;
+      from += 252;
+      to += 252;
+      address += 252;
+      remain_data_to_be_transfered -= 252;
     }
   }
 
@@ -628,7 +629,7 @@ export class CC2538 implements Command {
     assert(chip_id != null, "Chip Id must be != null");
     return chip_id;
   }
-  //   TODO:
+
   SetXOSC(...params: any): void {
     throw new Error("Method not implemented.");
   }

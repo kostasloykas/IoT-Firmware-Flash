@@ -32,7 +32,6 @@ function Alert(message: string, type_of_alert: string, duration: number = 4000) 
 // update page
 function UpdatePage() {
   ReleaseFlashButton();
-  lib.UpdateProgressBar("0%");
 }
 
 function ReleaseFlashButton(): void {
