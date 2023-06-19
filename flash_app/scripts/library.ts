@@ -15,7 +15,6 @@ export interface Command {
   writer: any;
   reader: any;
   encoder: any;
-  decoder: any;
   filters: object;
   start_address: number;
 
@@ -75,7 +74,7 @@ export class FirmwareFile {
     this.ConvertFirmwareToBytes(input_element)
       .then((bytes) => {
         this.firmware_bytes = bytes;
-        DEBUG(bytes);
+        DEBUG(this.firmware_bytes);
         this.size = this.firmware_bytes.length;
         this.CalculateCRC32();
       })

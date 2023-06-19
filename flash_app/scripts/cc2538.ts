@@ -1,4 +1,3 @@
-import { resolve } from "path/posix";
 import {
   ACK,
   DEBUG,
@@ -12,7 +11,6 @@ import {
   Command,
   UpdateProgressBar,
 } from "./library";
-import { rejects } from "assert";
 
 enum VERSION_CC2538 {
   _512_KB,
@@ -46,31 +44,23 @@ class Encoder {
   }
 }
 
-// FIXME: Decode data that came from device
-class Decoder {
-  public decode(data: number[]): Uint8Array {
-    const decodedData = new Uint8Array(data);
-    return decodedData;
-  }
-}
-
 export class CC2538 implements Command {
   version: VERSION_CC2538;
   port: any;
   writer: any;
   reader: any;
   encoder: Encoder;
-  decoder: Decoder;
   filters: object = {
     dataBits: 8,
-    baudRate: 460800, //maximum 460800 , 115200
+    baudRate: 115200, //maximum 460800 , 115200
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
     // bufferSize: 4 * 1024, //4KB
   };
   CHIP_ID: number[] = [0xb964, 0xb965];
-  start_address: number = 0x00200000; //start address of flashing
+  start_address: number = 0x00200000; //start address of flash memory
+  start_address_write: number = 0x00202000; //start address for writing the image
   FLASH_CTRL_DIECFG0: number = 0x400d3014;
 
   // FIXME: FlashFirmware
@@ -78,7 +68,6 @@ export class CC2538 implements Command {
     // Initialize
     this.port = port;
     this.encoder = new Encoder();
-    this.decoder = new Decoder();
 
     // Open port
     PRINT("Try to open the port");
@@ -147,48 +136,38 @@ export class CC2538 implements Command {
     // this.ConfigureCCA();
     // PRINT("CCA configured");
 
-    // PRINT("Try to Erase flash memory");
-    // await this.Erase();
-    // PRINT("Erase Done");
+    PRINT("Try to Erase flash memory");
+    //  FIXME: to number allakse
+    await this.Erase(this.start_address, 524288)
+      .then(() => PRINT("Erase Done"))
+      .catch((err) => ERROR("Erase:", err));
     UpdateProgressBar("60%");
 
-    // PRINT("Try to write image in flash");
-    // await this.WriteFlash(this.start_address, image.FirmwareBytes)
-    //   .then(() => {
-    //     PRINT("Image succesfully written to flash");
-    //   })
-    //   .catch((err) => {
-    //     ERROR("WriteFlash:", err);
-    //   });
+    PRINT("Try to write image in flash");
+    await this.WriteFlash(this.start_address_write, image.FirmwareBytes)
+      .then(() => {
+        PRINT("Image succesfully written to flash");
+      })
+      .catch((err) => {
+        ERROR("WriteFlash:", err);
+      });
     UpdateProgressBar("70%");
 
     PRINT("Try to verify firmware");
-    await this.Verify(image)
-      .then(() => {
-        PRINT("Firmware verified");
-      })
-      .catch((err) => {
-        ERROR("Verify:", err);
-      });
+    await this.Verify(this.start_address_write, image)
+      .then(() => PRINT("Firmware verified"))
+      .catch((err) => ERROR("Verify:", err));
     UpdateProgressBar("80%");
 
     PRINT("Try to reset device");
     await this.Reset()
-      .then(() => {
-        PRINT("Device has been reset");
-      })
-      .catch((err) => {
-        ERROR("Reset", err);
-      });
+      .then(() => PRINT("Device has been reset"))
+      .catch((err) => ERROR("Reset", err));
     UpdateProgressBar("90%");
 
     await this.ClosePort()
-      .then(() => {
-        PRINT("Port closed successfully");
-      })
-      .catch((err) => {
-        ERROR("Port can't be closed ", err);
-      });
+      .then(() => PRINT("Port closed successfully"))
+      .catch((err) => ERROR("Port can't be closed ", err));
     UpdateProgressBar("100%");
 
     return;
@@ -210,10 +189,10 @@ export class CC2538 implements Command {
   }
 
   // Verify
-  async Verify(image: FirmwareFile) {
+  async Verify(address: number, image: FirmwareFile) {
     let crc32_local: number = image.CRC32;
     let crc32_remote: number = null;
-    await this.CRC32(this.start_address, image.Size)
+    await this.CRC32(address, image.Size)
       .then((crc32: number) => {
         crc32_remote = crc32;
       })
@@ -223,8 +202,8 @@ export class CC2538 implements Command {
 
     assert(crc32_remote != null, "crc32_remote must be != null");
 
-    DEBUG("local_crc=", crc32_local, "remote_crc=", crc32_remote);
-    if (crc32_local != crc32_remote) throw new Error("crc32_local != crc32_remote");
+    PRINT("local_crc=", crc32_local, "remote_crc=", crc32_remote);
+    if (crc32_local != crc32_remote) ERROR("crc32_local != crc32_remote");
   }
 
   // invoke bootloader
@@ -249,48 +228,54 @@ export class CC2538 implements Command {
   }
 
   //   TODO:
-  ConfigureCCA() {}
+  ConfigureCCA(): void {}
 
   //   FIXME: WriteFlash
   async WriteFlash(address: number, image: Uint8Array) {
+    address = 0x00202000;
     let from: number = 0;
-    let to: number = from + 252;
-    let retry: number = 3; // max times to resend a packet if bootloader return NAck
+    let to: number = from + 248;
+    let lng: number = image.length;
+    let download_needs: boolean = true;
+
+    // in order to skip empty data
+    let empty_data = new Uint8Array(248).fill(0xff);
 
     while (true) {
       let data: Uint8Array = image.slice(from, to); //take data (from-to)
-
-      // send maximum 252 data
-      assert(data.length <= 252, "length must be <= 252");
+      // send maximum 248 data
+      assert(data.length <= 248, "length must be <= 248");
 
       // if data finished break
       if (data.length == 0) break;
 
+      let are_equal: boolean = data.every((element, index) => element == empty_data[index]);
+
       // start flashing
-      while (retry > 0) {
-        this.Download(address, data.length).catch((err) => {
-          ERROR("WriteFlash", err);
-        });
-        this.SendData(data)
-          .then((needs_to_try_again: boolean) => {
-            // if doesn't need to try again then break
-            if (!needs_to_try_again) retry = 0;
-          })
-          .catch((err) => {
+      if (!are_equal) {
+        if (download_needs) {
+          // download
+          await this.Download(address, lng).catch((err) => {
             ERROR("WriteFlash", err);
           });
-
-        retry--;
+          download_needs = false;
+        }
+        // send data
+        await this.SendData(data).catch((err) => {
+          ERROR("WriteFlash", err);
+        });
+      } else {
+        download_needs = true;
       }
 
-      from += 252;
-      to += 252;
-      address += 252;
-      retry = 3;
+      from += 248;
+      to += 248;
+      address += 248;
+      lng -= 248;
     }
   }
 
-  //   TODO:
+  //   TODO: MemoryRead
   MemoryRead(...params: any): void {
     throw new Error("Method not implemented.");
   }
@@ -435,10 +420,8 @@ export class CC2538 implements Command {
     return crc32_remote;
   }
 
-  // FIXME: SendData
-  // @returns {bollean} if needs to retransmit data
-  async SendData(data: Uint8Array): Promise<boolean> {
-    let response: number = null;
+  // SendData
+  async SendData(data: Uint8Array) {
     assert(data.length <= 252, "Data must be <= 252, the size is ".concat(data.length.toString()));
     // create the array that contains command number and the data
     let array: Uint8Array = new Uint8Array(data.length + 1); //253 bytes
@@ -452,20 +435,16 @@ export class CC2538 implements Command {
 
     await this.WaitForAck()
       .then((res: number) => {
-        response = res;
+        if (res == NACK) ERROR("Nack came in SendData function");
       })
       .catch((err) => {
         ERROR("SendData:", err);
       });
 
-    if (response == NACK) return true;
-    else {
-      this.CheckIfStatusIsSuccess(await this.GetStatus());
-      return false;
-    }
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
   }
 
-  //   FIXME: Download
+  // Download
   async Download(start_address: number, size_of_data: number) {
     assert(size_of_data % 4 == 0, "Size must be multiple of 4");
     let addr = this.encoder.encode_addr(start_address);
@@ -498,6 +477,7 @@ export class CC2538 implements Command {
     this.CheckIfStatusIsSuccess(await this.GetStatus());
   }
 
+  // doesn't need to implement
   Run(): void {
     throw new Error("Method not implemented.");
   }
@@ -582,9 +562,36 @@ export class CC2538 implements Command {
       });
   }
 
-  //   TODO:
-  async Erase(...params: any) {
-    throw new Error("Method not implemented.");
+  async Erase(addr: number, number_of_bytes_to_be_erased: number) {
+    let address = this.encoder.encode_addr(addr);
+    let size = this.encoder.encode_addr(number_of_bytes_to_be_erased);
+    let data: Uint8Array = this.encoder.encode([
+      0x26,
+      address[0],
+      address[1],
+      address[2],
+      address[3],
+      size[0],
+      size[1],
+      size[2],
+      size[3],
+    ]);
+    let packet: Packet = new Packet(data);
+
+    await this.Write(packet).catch((err) => {
+      ERROR("EraseMemory:", err);
+    });
+
+    // wait maximum 10 seconds
+    await this.WaitForAck(10000)
+      .then((response: number) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("EraseMemory:", err);
+      });
+
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
   }
 
   // Get Chip Id
@@ -634,7 +641,6 @@ export class CC2538 implements Command {
     while (offset < buffer.byteLength) {
       timeout = setTimeout(() => {
         this.ClosePort();
-        alert("Timeout occured! Is device connected?");
       }, time_to_wait);
 
       const { value, done } = await this.reader.read(new Uint8Array(buffer, offset));
