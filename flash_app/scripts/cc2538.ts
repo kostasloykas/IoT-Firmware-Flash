@@ -1,3 +1,4 @@
+import { resolve } from "path/posix";
 import {
   ACK,
   DEBUG,
@@ -11,6 +12,7 @@ import {
   Command,
   UpdateProgressBar,
 } from "./library";
+import { rejects } from "assert";
 
 enum VERSION_CC2538 {
   _512_KB,
@@ -625,12 +627,14 @@ export class CC2538 implements Command {
   }
 
   // ReadInto
-  async ReadInto(buffer: ArrayBuffer, time_to_wait: number = 100) {
+  async ReadInto(buffer: ArrayBuffer, time_to_wait: number = 0.1) {
     let offset = 0;
+    let timeout = null;
 
     while (offset < buffer.byteLength) {
-      let timeout = setTimeout(() => {
-        ERROR("Read timeout occurred");
+      timeout = setTimeout(() => {
+        this.ClosePort();
+        alert("Timeout occured! Is device connected?");
       }, time_to_wait);
 
       const { value, done } = await this.reader.read(new Uint8Array(buffer, offset));

@@ -176,7 +176,6 @@ export const NACK = 0x33;
 export enum FILE_EXTENTION {
   HEX = "hex",
   BIN = "bin",
-  ELF = "elf",
 }
 
 // ============================= FUNCTIONS =============================

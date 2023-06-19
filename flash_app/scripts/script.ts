@@ -43,6 +43,7 @@ function ReleaseFlashButton(): void {
 function CheckForSerialNavigator(): void {
   // Web Serial API is not available
   if (!("serial" in navigator)) {
+    alert("Web Serial API is not available");
     lib.ERROR("Web Serial API is not available");
   }
 }
@@ -139,6 +140,7 @@ async function Main() {
   else lib.PRINT("Device is ", device);
 
   await device.FlashFirmware(port, image);
+
   Alert("The process finished succsfully", "success");
   UpdatePage(); // update page after flashing
   return;
