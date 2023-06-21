@@ -42,7 +42,7 @@ export interface Command {
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
   ConfigureCCA(...params: any): void;
-  FlashSizeOfFlashMemory(...params: any): void;
+  SizeOfFlashMemory(...params: any): void;
   WriteFlash(...params: any): void;
   IsBootloaderEnabled(...params: any): void;
   AreImageBitsValid(...params: any): void;

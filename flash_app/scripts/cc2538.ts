@@ -1,3 +1,4 @@
+import { waitForDebugger } from "inspector";
 import {
   ACK,
   DEBUG,
@@ -60,7 +61,7 @@ export class CC2538 implements Command {
   CHIP_ID: number[] = [0xb964, 0xb965];
   start_address: number = 0x00200000; //start address of flash memory
   start_address_write: number = 0x00202000; //start address for writing the image
-  FLASH_CTRL_DIECFG0: number = 0x400d3014;
+  FLASH_CTRL_DIECFG0: number = 0x400d3014; //this address contains inforamtion about device
 
   // FlashFirmware
   async FlashFirmware(port: any, image: FirmwareFile) {
@@ -115,9 +116,14 @@ export class CC2538 implements Command {
     UpdateProgressBar("30%");
 
     PRINT("Try to find informations about device");
-    // await this.FlashSizeOfFlashMemory();
-    await this.MemoryRead(this.FLASH_CTRL_DIECFG0);
-    return;
+
+    await this.SizeOfFlashMemory()
+      .then((size_of_flash_memory: number) => {
+        PRINT("Size of flash memory is".concat(size_of_flash_memory.toString()).concat(" KB"));
+      })
+      .catch((err) => {
+        ERROR("SizeOfFlashMemory:", err);
+      });
 
     // await this.IsBootloaderEnabled()
     //   .then((is_enabled: boolean) => {
@@ -132,11 +138,13 @@ export class CC2538 implements Command {
     //     else PRINT("Image is not valid");
     //   })
     //   .catch((err) => ERROR("IsImageValid", err));
-    // UpdateProgressBar("50%");
 
     // PRINT("Try to configure CCA");
     // this.ConfigureCCA();
     // PRINT("CCA configured");
+
+    UpdateProgressBar("50%");
+    return;
 
     PRINT("Try to Erase flash memory");
     //  FIXME: to number allakse
@@ -185,9 +193,18 @@ export class CC2538 implements Command {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME:FlashSize
-  async FlashSizeOfFlashMemory() {
-    throw new Error("Method not implemented.");
+  // FIXME: SizeOfFlashMemory
+  async SizeOfFlashMemory(): Promise<number> {
+    let size: number = null;
+    await this.MemoryRead(this.FLASH_CTRL_DIECFG0)
+      .then((info: number) => {
+        DEBUG(info);
+        size = info;
+      })
+      .catch((err) => ERROR("SizeOfFlashMemory:", err));
+
+    assert(size != null, "size must be != null");
+    return size;
   }
 
   // Verify
