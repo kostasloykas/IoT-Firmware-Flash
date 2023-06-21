@@ -116,7 +116,7 @@ export class CC2538 implements Command {
 
     PRINT("Try to find informations about device");
     // await this.FlashSizeOfFlashMemory();
-
+    await this.MemoryRead(this.FLASH_CTRL_DIECFG0);
     return;
 
     // await this.IsBootloaderEnabled()
@@ -288,9 +288,51 @@ export class CC2538 implements Command {
     }
   }
 
-  //   TODO: MemoryRead
-  MemoryRead(...params: any): void {
-    throw new Error("Method not implemented.");
+  //   FIXME: MemoryRead
+  async MemoryRead(address: number): Promise<number> {
+    let response: number = null;
+    let addr = this.encoder.encode_addr(address);
+    let width = 4; // read 4 bytes
+    let data: Uint8Array = this.encoder.encode([
+      0x2a, //command
+      addr[0],
+      addr[1],
+      addr[2],
+      addr[3],
+      4,
+    ]);
+    let packet: Packet = new Packet(data);
+
+    // write packet
+    await this.Write(packet).catch((err) => {
+      ERROR("MemoryRead:", err);
+    });
+
+    // wait for ack 5 seconds
+    await this.WaitForAck()
+      .then((response: number) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("MemoryRead:", err);
+      });
+
+    // receive packet
+    await this.ReceivePacket()
+      .then((packet: Packet) => {
+        if (packet == null) throw new Error("Packet was corrupted");
+        // decode data
+        response = ((packet.Data[0] << 24) |
+          (packet.Data[1] << 16) |
+          (packet.Data[2] << 8) |
+          (packet.Data[3] << 0)) as number;
+      })
+      .catch((err) => ERROR("MemoryRead:", err));
+
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
+
+    assert(response != null, "response must be != null");
+    return response;
   }
 
   async SendAck() {
