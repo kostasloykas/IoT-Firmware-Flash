@@ -45,12 +45,24 @@ class Encoder {
   }
 }
 
+// To decode data before send them to device
+class Decoder {
+  // encodes the address in the MSB
+  public decode_addr(packet: Packet): number {
+    return ((packet.Data[0] << 24) |
+      (packet.Data[1] << 16) |
+      (packet.Data[2] << 8) |
+      (packet.Data[3] << 0)) as number;
+  }
+}
+
 export class CC2538 implements Command {
   version: VERSION_CC2538;
   port: any;
   writer: any;
   reader: any;
   encoder: Encoder;
+  decoder: Decoder;
   filters: object = {
     dataBits: 8,
     baudRate: 115200, //maximum 460800 , 115200
@@ -67,6 +79,7 @@ export class CC2538 implements Command {
   async FlashFirmware(port: any, image: FirmwareFile) {
     this.port = port;
     this.encoder = new Encoder();
+    this.decoder = new Decoder();
 
     // check if image is compatible with this device
     this.CheckIfImageIsCompatibleForThisDevice("cc2538", image);
@@ -305,7 +318,7 @@ export class CC2538 implements Command {
     }
   }
 
-  //   FIXME: MemoryRead
+  // MemoryRead
   async MemoryRead(address: number): Promise<number> {
     let response: number = null;
     let addr = this.encoder.encode_addr(address);
@@ -339,10 +352,7 @@ export class CC2538 implements Command {
       .then((packet: Packet) => {
         if (packet == null) throw new Error("Packet was corrupted");
         // decode data
-        response = ((packet.Data[0] << 24) |
-          (packet.Data[1] << 16) |
-          (packet.Data[2] << 8) |
-          (packet.Data[3] << 0)) as number;
+        response = this.decoder.decode_addr(packet);
       })
       .catch((err) => ERROR("MemoryRead:", err));
 
@@ -479,10 +489,7 @@ export class CC2538 implements Command {
       .then((packet: Packet) => {
         if (packet == null) throw new Error("Packet was corrupted");
         // decode crc32
-        crc32_remote = ((packet.Data[0] << 24) |
-          (packet.Data[1] << 16) |
-          (packet.Data[2] << 8) |
-          (packet.Data[3] << 0)) as number;
+        crc32_remote = this.decoder.decode_addr(packet);
       })
       .catch((err) => ERROR("CRC32:", err));
 
