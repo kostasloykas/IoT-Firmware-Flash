@@ -56,7 +56,6 @@ export class CC2538 implements Command {
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
-    // bufferSize: 4 * 1024, //4KB
   };
   CHIP_ID: number[] = [0xb964, 0xb965];
   start_address: number = 0x00200000; //start address of flash memory
@@ -65,9 +64,11 @@ export class CC2538 implements Command {
 
   // FlashFirmware
   async FlashFirmware(port: any, image: FirmwareFile) {
-    // Initialize
     this.port = port;
     this.encoder = new Encoder();
+
+    // check if image is compatible with this device
+    this.CheckIfImageIsCompatibleForThisDevice("cc2538", image);
 
     // Open port
     PRINT("Try to open the port");
@@ -113,8 +114,10 @@ export class CC2538 implements Command {
       });
     UpdateProgressBar("30%");
 
-    // PRINT("Try to find informations about device");
-    // await this.FlashSize();
+    PRINT("Try to find informations about device");
+    // await this.FlashSizeOfFlashMemory();
+
+    return;
 
     // await this.IsBootloaderEnabled()
     //   .then((is_enabled: boolean) => {
@@ -178,12 +181,12 @@ export class CC2538 implements Command {
   }
 
   // TODO:IsImageValid
-  async IsImageValid(): Promise<boolean> {
+  async AreImageBitsValid(): Promise<boolean> {
     throw new Error("Method not implemented.");
   }
 
-  // TODO:FlashSize
-  async FlashSize() {
+  // FIXME:FlashSize
+  async FlashSizeOfFlashMemory() {
     throw new Error("Method not implemented.");
   }
 
@@ -228,6 +231,15 @@ export class CC2538 implements Command {
 
   //   TODO:
   ConfigureCCA(): void {}
+
+  // CheckIfImageIsValidForThisDevice
+  CheckIfImageIsCompatibleForThisDevice(device_name: string, image: FirmwareFile) {
+    const decoder: TextDecoder = new TextDecoder("utf-8");
+    const text: string = decoder.decode(image.FirmwareBytes);
+
+    // if image doesn't include
+    if (!text.includes(device_name)) ERROR("This image is not compatible with this device");
+  }
 
   // WriteFlash
   async WriteFlash(address: number, image: Uint8Array) {

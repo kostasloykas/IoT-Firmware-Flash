@@ -12,7 +12,12 @@
   <div class="d-flex justify-content-center m-5">
     <div class=" col-sm-5 text-center border border-success border-3 rounded-3 p-3">
       <span class="h2 fw-bold">Upload file</span>
-      <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex , .bin" />
+      <input
+        type="file"
+        id="image"
+        class="form-control w-50 m-auto mt-3"
+        accept=".hex , .bin , .native, .zoul, .openmote, .nrf"
+      />
       <div class="progress mt-3 w-50 m-auto" role="progressbar" aria-valuemin="0" aria-valuemax="100">
         <div id="bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%" />
       </div>

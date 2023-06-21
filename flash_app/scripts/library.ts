@@ -42,10 +42,11 @@ export interface Command {
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
   ConfigureCCA(...params: any): void;
-  FlashSize(...params: any): void;
+  FlashSizeOfFlashMemory(...params: any): void;
   WriteFlash(...params: any): void;
   IsBootloaderEnabled(...params: any): void;
-  IsImageValid(...params: any): void;
+  AreImageBitsValid(...params: any): void;
+  CheckIfImageIsCompatibleForThisDevice(...params: any): void;
 }
 
 // ============================= CLASSES =============================
@@ -173,6 +174,10 @@ export const NACK = 0x33;
 export enum FILE_EXTENTION {
   HEX = "hex",
   BIN = "bin",
+  ZOUL = "zoul",
+  NRF = "nrf",
+  NATIVE = "native",
+  OPENMOTE = "openmote",
 }
 
 // ============================= FUNCTIONS =============================

@@ -2,6 +2,7 @@
 import $ from "jquery";
 import * as lib from "./library";
 import { CC2538 } from "./cc2538";
+import { assert } from "console";
 
 // ==================== VARIABLES =========================
 
