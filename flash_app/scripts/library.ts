@@ -44,7 +44,7 @@ export interface Command {
   ConfigureCCA(...params: any): void;
   SizeOfFlashMemory(...params: any): void;
   WriteFlash(...params: any): void;
-  IsBootloaderEnabled(...params: any): void;
+  BootloaderInformations(...params: any): void;
   AreImageBitsValid(...params: any): void;
   CheckIfImageIsCompatibleForThisDevice(...params: any): void;
 }

@@ -14,9 +14,9 @@ import {
 } from "./library";
 
 enum VERSION_CC2538 {
-  _512_KB,
-  _256_KB,
-  _128_KB,
+  _512_KB = 512,
+  _256_KB = 256,
+  _128_KB = 128,
 }
 
 // To encode data before send them to device
@@ -74,6 +74,11 @@ export class CC2538 implements Command {
   start_address: number = 0x00200000; //start address of flash memory
   start_address_write: number = 0x00202000; //start address for writing the image
   FLASH_CTRL_DIECFG0: number = 0x400d3014; //this address contains inforamtion about device
+  BOOTLOADER_CONFIGURATION_ADDRESS = new Map<number, number>([
+    [512, 0x0027ffd7],
+    [256, 0x0023ffd7],
+    [128, 0x0021ffd7],
+  ]); // for 512 ,256 and 128 KB
 
   // FlashFirmware
   async FlashFirmware(port: any, image: FirmwareFile) {
@@ -132,18 +137,25 @@ export class CC2538 implements Command {
 
     await this.SizeOfFlashMemory()
       .then((size_of_flash_memory: number) => {
-        PRINT("Size of flash memory is".concat(size_of_flash_memory.toString()).concat(" KB"));
+        assert(
+          size_of_flash_memory in VERSION_CC2538,
+          "Valid sizes of flash memory are 128,256,512 but current size is ".concat(
+            size_of_flash_memory.toString()
+          )
+        );
+        this.version = size_of_flash_memory;
+        PRINT("Size of flash memory is ".concat(size_of_flash_memory.toString()).concat(" KB"));
       })
       .catch((err) => {
         ERROR("SizeOfFlashMemory:", err);
       });
 
-    // await this.IsBootloaderEnabled()
-    //   .then((is_enabled: boolean) => {
-    //     if (is_enabled) PRINT("Bootloader is enabled");
-    //     else PRINT("Bootloader is disabled");
-    //   })
-    //   .catch((err) => ERROR("IsBootloaderEnabled", err));
+    await this.BootloaderInformations()
+      .then((is_enabled: boolean) => {
+        if (is_enabled) PRINT("Bootloader is enabled");
+        else PRINT("Bootloader is disabled");
+      })
+      .catch((err) => ERROR("IsBootloaderEnabled", err));
 
     // await this.IsImageValid()
     //   .then((is_valid: boolean) => {
@@ -160,8 +172,7 @@ export class CC2538 implements Command {
     return;
 
     PRINT("Try to Erase flash memory");
-    //  FIXME: to number allakse
-    await this.Erase(this.start_address, 524288)
+    await this.Erase(this.start_address, this.version * 1024)
       .then(() => PRINT("Erase Done"))
       .catch((err) => ERROR("Erase:", err));
     UpdateProgressBar("60%");
@@ -196,28 +207,42 @@ export class CC2538 implements Command {
     return;
   }
 
-  // TODO:IsBootloaderEnabled
-  async IsBootloaderEnabled(): Promise<boolean> {
-    throw new Error("Method not implemented.");
+  // FIXME: IsBootloaderEnabled
+  async BootloaderInformations(): Promise<boolean> {
+    // get the right bootloader configuration address based on the flash memory size
+    let address: number = this.BOOTLOADER_CONFIGURATION_ADDRESS.get(this.version);
+    assert(address != null, "Didn't find bootloader configuration address");
+    let is_enabled: boolean = null;
+
+    await this.MemoryRead(address)
+      .then((info: number) => {
+        DEBUG(info.toString(2));
+      })
+      .catch((err) => ERROR("IsBootloaderEnabled:", err));
+
+    assert(is_enabled != null, "Variable is_enabled must be != null");
+
+    return true;
   }
 
-  // TODO:IsImageValid
+  // TODO: IsImageValid
   async AreImageBitsValid(): Promise<boolean> {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: SizeOfFlashMemory
+  // SizeOfFlashMemory
   async SizeOfFlashMemory(): Promise<number> {
     let size: number = null;
     await this.MemoryRead(this.FLASH_CTRL_DIECFG0)
       .then((info: number) => {
-        DEBUG(info);
-        size = info;
+        size = (info & 0xff & 0x70) >> 4;
+        if (size > 0 && size <= 4) size *= 0x20000;
+        else assert(0, "Size of flash memory not valid");
       })
       .catch((err) => ERROR("SizeOfFlashMemory:", err));
 
     assert(size != null, "size must be != null");
-    return size;
+    return size >> 10;
   }
 
   // Verify
