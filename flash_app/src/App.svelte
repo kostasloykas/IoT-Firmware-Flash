@@ -11,7 +11,7 @@
   </div>
   <div class="d-flex justify-content-center m-5">
     <div class=" col-sm-5 text-center border border-success border-3 rounded-3 p-3">
-      <span class="h2 fw-bold">Upload file</span>
+      <span class="h2 fw-bold">Upload File</span>
       <input
         type="file"
         id="image"

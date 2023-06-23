@@ -151,10 +151,7 @@ export class CC2538 implements Command {
       });
 
     await this.BootloaderInformations()
-      .then((is_enabled: boolean) => {
-        if (is_enabled) PRINT("Bootloader is enabled");
-        else PRINT("Bootloader is disabled");
-      })
+      .then((informations: string) => PRINT(informations))
       .catch((err) => ERROR("IsBootloaderEnabled", err));
 
     // await this.IsImageValid()
@@ -169,7 +166,6 @@ export class CC2538 implements Command {
     // PRINT("CCA configured");
 
     UpdateProgressBar("50%");
-    return;
 
     PRINT("Try to Erase flash memory");
     await this.Erase(this.start_address, this.version * 1024)
@@ -208,21 +204,21 @@ export class CC2538 implements Command {
   }
 
   // FIXME: IsBootloaderEnabled
-  async BootloaderInformations(): Promise<boolean> {
+  async BootloaderInformations(): Promise<string> {
     // get the right bootloader configuration address based on the flash memory size
     let address: number = this.BOOTLOADER_CONFIGURATION_ADDRESS.get(this.version);
     assert(address != null, "Didn't find bootloader configuration address");
-    let is_enabled: boolean = null;
+    let informations: string = null;
 
     await this.MemoryRead(address)
       .then((info: number) => {
-        DEBUG(info.toString(2));
+        informations = info.toString(2);
       })
-      .catch((err) => ERROR("IsBootloaderEnabled:", err));
+      .catch((err) => ERROR("BootloaderInformations:", err));
 
-    assert(is_enabled != null, "Variable is_enabled must be != null");
+    assert(informations != null, "Variable is_enabled must be != null");
 
-    return true;
+    return informations;
   }
 
   // TODO: IsImageValid
@@ -275,7 +271,7 @@ export class CC2538 implements Command {
 
   // Open port
   async OpenPort() {
-    await this.port.open(this.filters);
+    await this.port.open(this.filters).catch((err: any) => ERROR("OpenPort:", err));
   }
   // ClosePort
   async ClosePort() {
