@@ -159,19 +159,19 @@ export class CC2538 implements Command {
     //     if (is_valid) PRINT("Image is valid");
     //     else PRINT("Image is not valid");
     //   })
-    //   .catch((err) => ERROR("IsImageValid", err));
+    //   .catch((err: any) => ERROR("IsImageValid", err));
 
     // PRINT("Try to configure CCA");
     // this.ConfigureCCA();
     // PRINT("CCA configured");
 
-    UpdateProgressBar("50%");
+    this.CheckIfImageFitsInFlashMemory(this.version, image.Size);
 
     PRINT("Try to Erase flash memory");
     await this.Erase(this.start_address, this.version * 1024)
       .then(() => PRINT("Erase Done"))
       .catch((err) => ERROR("Erase:", err));
-    UpdateProgressBar("60%");
+    UpdateProgressBar("40%");
 
     PRINT("Try to write image in flash");
     await this.WriteFlash(this.start_address_write, image.FirmwareBytes)
@@ -212,7 +212,12 @@ export class CC2538 implements Command {
 
     await this.MemoryRead(address)
       .then((info: number) => {
-        informations = info.toString(2);
+        let enable_bit: number;
+        let pin_number: number;
+        informations = "";
+        informations += "Bootloader is enabled";
+        informations += "Bootloader is disabled";
+        informations += "Pin number is ".concat(pin_number.toString());
       })
       .catch((err) => ERROR("BootloaderInformations:", err));
 
@@ -221,9 +226,15 @@ export class CC2538 implements Command {
     return informations;
   }
 
-  // TODO: IsImageValid
-  async AreImageBitsValid(): Promise<boolean> {
+  // TODO: Image valid field
+  async ImageValidFieldInCCA(): Promise<boolean> {
     throw new Error("Method not implemented.");
+  }
+
+  // Check if image fits in flash memory
+  CheckIfImageFitsInFlashMemory(version: VERSION_CC2538, size_of_image: number): void {
+    // version is the size of flash memory in KB
+    if (version * 1024 < size_of_image) ERROR("Image doesn't fit in flash memory");
   }
 
   // SizeOfFlashMemory

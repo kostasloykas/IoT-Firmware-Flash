@@ -45,7 +45,8 @@ export interface Command {
   SizeOfFlashMemory(...params: any): void;
   WriteFlash(...params: any): void;
   BootloaderInformations(...params: any): void;
-  AreImageBitsValid(...params: any): void;
+  ImageValidFieldInCCA(...params: any): void;
+  CheckIfImageFitsInFlashMemory(...params: any): void;
   CheckIfImageIsCompatibleForThisDevice(...params: any): void;
 }
 
