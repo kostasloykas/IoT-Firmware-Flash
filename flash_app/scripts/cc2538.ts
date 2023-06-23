@@ -1,4 +1,3 @@
-import { waitForDebugger } from "inspector";
 import {
   ACK,
   DEBUG,
@@ -154,17 +153,6 @@ export class CC2538 implements Command {
       .then((informations: string) => PRINT(informations))
       .catch((err) => ERROR("IsBootloaderEnabled", err));
 
-    // await this.IsImageValid()
-    //   .then((is_valid: boolean) => {
-    //     if (is_valid) PRINT("Image is valid");
-    //     else PRINT("Image is not valid");
-    //   })
-    //   .catch((err: any) => ERROR("IsImageValid", err));
-
-    // PRINT("Try to configure CCA");
-    // this.ConfigureCCA();
-    // PRINT("CCA configured");
-
     this.CheckIfImageFitsInFlashMemory(this.version, image.Size);
 
     PRINT("Try to Erase flash memory");
@@ -203,7 +191,7 @@ export class CC2538 implements Command {
     return;
   }
 
-  // FIXME: IsBootloaderEnabled
+  // IsBootloaderEnabled
   async BootloaderInformations(): Promise<string> {
     // get the right bootloader configuration address based on the flash memory size
     let address: number = this.BOOTLOADER_CONFIGURATION_ADDRESS.get(this.version);
@@ -212,11 +200,14 @@ export class CC2538 implements Command {
 
     await this.MemoryRead(address)
       .then((info: number) => {
-        let enable_bit: number;
-        let pin_number: number;
+        let bootloader_bits = info & 0xff;
+        let enable_bit: number = (bootloader_bits >> 4) & 0x1;
+        let level_bit: number = (bootloader_bits >> 3) & 0x1;
+        let pin_number: number = bootloader_bits & 0x7; //take first 3 bits
+
         informations = "";
-        informations += "Bootloader is enabled";
-        informations += "Bootloader is disabled";
+        informations += enable_bit == 1 ? "Bootloader is enabled ," : "Bootloader is disabled ,";
+        informations += level_bit == 1 ? "Level bit is high ," : "Level bit is low ,";
         informations += "Pin number is ".concat(pin_number.toString());
       })
       .catch((err) => ERROR("BootloaderInformations:", err));
@@ -224,11 +215,6 @@ export class CC2538 implements Command {
     assert(informations != null, "Variable is_enabled must be != null");
 
     return informations;
-  }
-
-  // TODO: Image valid field
-  async ImageValidFieldInCCA(): Promise<boolean> {
-    throw new Error("Method not implemented.");
   }
 
   // Check if image fits in flash memory
