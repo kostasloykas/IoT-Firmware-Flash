@@ -2,6 +2,7 @@
 import $ from "jquery";
 import * as lib from "./library";
 import { CC2538 } from "./cc2538";
+import { CC26x0 } from "./cc26x0";
 import { assert } from "console";
 
 // ==================== VARIABLES =========================
@@ -10,8 +11,10 @@ let image_selected: boolean = false;
 let timeout: any = null;
 let image: lib.FirmwareFile = null;
 
-export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>();
-SUPPORTED_DEVICES.set(new lib.Device(0x10c4, 0xea60), new CC2538()); // Zolertia CC2538
+export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
+  [new lib.Device(0x10c4, 0xea60), new CC2538()],
+  [new lib.Device(0x10c5, 0xea30), new CC26x0()],
+]);
 
 // ====================== FUNCTIONS ==================
 

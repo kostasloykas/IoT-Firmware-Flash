@@ -41,7 +41,6 @@ export interface Command {
   Erase(...params: any): void;
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
-  ConfigureCCA(...params: any): void;
   SizeOfFlashMemory(...params: any): void;
   WriteFlash(...params: any): void;
   BootloaderInformations(...params: any): void;

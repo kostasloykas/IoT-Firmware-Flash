@@ -159,7 +159,7 @@ export class CC2538 implements Command {
     await this.Erase(this.start_address, this.version * 1024)
       .then(() => PRINT("Erase Done"))
       .catch((err) => ERROR("Erase:", err));
-    UpdateProgressBar("40%");
+    UpdateProgressBar("50%");
 
     PRINT("Try to write image in flash");
     await this.WriteFlash(this.start_address_write, image.FirmwareBytes)
@@ -276,9 +276,6 @@ export class CC2538 implements Command {
     await this.writer.releaseLock();
     await this.port.close();
   }
-
-  //   TODO:
-  ConfigureCCA(): void {}
 
   // CheckIfImageIsValidForThisDevice
   CheckIfImageIsCompatibleForThisDevice(device_name: string, image: FirmwareFile) {
