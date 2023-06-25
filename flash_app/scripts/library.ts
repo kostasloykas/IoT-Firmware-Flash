@@ -1,7 +1,6 @@
 /* library.ts */
 import $ from "jquery";
 import crc32 from "crc-32";
-import * as fs from "fs";
 
 declare global {
   interface Navigator {
@@ -109,8 +108,7 @@ export class FirmwareFile {
       if (type == "hex") {
         reader.onload = function (event) {
           let result: string = event.target?.result as string;
-          DEBUG(typeof result);
-          result = result.replace("\n", "");
+          result = result.replace(/\n/g, "").replace(/:/g, "");
           assert(isHex(result) == true, "");
           let bytes: Uint8Array = hexStringToUint8Array(result);
           resolve(bytes);
@@ -226,12 +224,12 @@ export function assert(condition: unknown, msg: string): asserts condition {
 }
 
 function hexStringToUint8Array(hexString: string): Uint8Array {
-  const strippedHex: string = hexString.replace(/\s/g, "");
-  const byteLength = strippedHex.length / 2;
+  const byteLength = hexString.length / 2;
   const uint8Array = new Uint8Array(byteLength);
 
   for (let i = 0; i < byteLength; i++) {
-    let byte = strippedHex.substring(i * 2, 2);
+    let start = i * 2;
+    let byte = hexString.slice(start, start + 2);
     uint8Array[i] = parseInt(byte, 16);
   }
 
