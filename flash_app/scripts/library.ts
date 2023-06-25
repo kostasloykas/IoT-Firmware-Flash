@@ -1,6 +1,7 @@
 /* library.ts */
 import $ from "jquery";
 import crc32 from "crc-32";
+import * as fs from "fs";
 
 declare global {
   interface Navigator {
@@ -75,6 +76,7 @@ export class FirmwareFile {
       .then((bytes) => {
         this.firmware_bytes = bytes;
         this.size = this.firmware_bytes.length;
+        DEBUG(this.firmware_bytes);
         this.CalculateCRC32();
       })
       .catch((err) => {
@@ -90,21 +92,41 @@ export class FirmwareFile {
 
   // Convert firmware to bytes
   private async ConvertFirmwareToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
-    return new Promise<Uint8Array>((resolve, reject) => {
+    return await new Promise<Uint8Array>((resolve, reject) => {
       const reader = new FileReader();
+      let file = input_element.files[0];
+      let type: string = file.name.split(".").pop();
 
-      reader.onload = function (event) {
+      reader.onloadend = function (event) {
         PRINT("File Uploaded");
-        const result = event.target?.result as ArrayBuffer;
-        const bytes = new Uint8Array(result);
-        resolve(bytes);
       };
 
       reader.onerror = function (event) {
         reject(new Error("Error reading file."));
       };
 
-      reader.readAsArrayBuffer(input_element.files[0]);
+      // read hex file
+      if (type == "hex") {
+        reader.onload = function (event) {
+          let result: string = event.target?.result as string;
+          DEBUG(typeof result);
+          result = result.replace("\n", "");
+          assert(isHex(result) == true, "");
+          let bytes: Uint8Array = hexStringToUint8Array(result);
+          resolve(bytes);
+        };
+
+        reader.readAsText(file);
+        // read bin file
+      } else if (type == "bin") {
+        reader.onload = function (event) {
+          const result = event.target?.result as ArrayBuffer;
+          let bytes: Uint8Array = new Uint8Array(result);
+          resolve(bytes);
+        };
+
+        reader.readAsArrayBuffer(file);
+      } else ERROR("unknown type of input file");
     });
   }
 
@@ -172,10 +194,6 @@ export const NACK = 0x33;
 export enum FILE_EXTENTION {
   HEX = "hex",
   BIN = "bin",
-  ZOUL = "zoul",
-  NRF = "nrf",
-  NATIVE = "native",
-  OPENMOTE = "openmote",
 }
 
 // ============================= FUNCTIONS =============================
@@ -205,4 +223,22 @@ export function UpdateProgressBar(percentage: string): void {
 // assumptions hold true
 export function assert(condition: unknown, msg: string): asserts condition {
   if (condition === false) throw new Error("Assertion: " + msg);
+}
+
+function hexStringToUint8Array(hexString: string): Uint8Array {
+  const strippedHex: string = hexString.replace(/\s/g, "");
+  const byteLength = strippedHex.length / 2;
+  const uint8Array = new Uint8Array(byteLength);
+
+  for (let i = 0; i < byteLength; i++) {
+    let byte = strippedHex.substring(i * 2, 2);
+    uint8Array[i] = parseInt(byte, 16);
+  }
+
+  return uint8Array;
+}
+
+function isHex(txt: string): boolean {
+  var regex = /[0-9A-Fa-f]{21}/g;
+  return regex.test(txt);
 }
