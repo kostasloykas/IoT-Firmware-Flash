@@ -75,7 +75,6 @@ export class FirmwareFile {
       .then((bytes) => {
         this.firmware_bytes = bytes;
         this.size = this.firmware_bytes.length;
-        DEBUG(this.firmware_bytes);
         this.CalculateCRC32();
       })
       .catch((err) => {
