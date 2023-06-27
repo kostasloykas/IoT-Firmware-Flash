@@ -2,8 +2,7 @@
 import $ from "jquery";
 import * as lib from "./library";
 import { CC2538 } from "./cc2538";
-import { CC26x0 } from "./cc26x0";
-import { assert } from "console";
+import { CC26xx } from "./cc26xx";
 
 // ==================== VARIABLES =========================
 
@@ -13,7 +12,7 @@ let image: lib.FirmwareFile = null;
 
 export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()],
-  [new lib.Device(0x10c5, 0xea30), new CC26x0()],
+  [new lib.Device(0x10c5, 0xea30), new CC26xx()],
 ]);
 
 // ====================== FUNCTIONS ==================
@@ -130,10 +129,15 @@ async function Main() {
     });
 
   lib.assert(port != null, "Port must be != null");
+
   // check the vendor id and product id of device
   // must be inside the supported vendors and products id
-  const product_id: number = port.getInfo().usbProductId;
-  const vendor_id: number = port.getInfo().usbVendorId;
+  // FIXME: change vendor and product id
+  // const product_id: number = port.getInfo().usbProductId;
+  // const vendor_id: number = port.getInfo().usbVendorId;
+  const product_id: number = 0xea30;
+  const vendor_id: number = 0x10c5;
+
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));
 

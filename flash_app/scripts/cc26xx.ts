@@ -12,10 +12,14 @@ import {
   UpdateProgressBar,
 } from "./library";
 
-enum VERSION_CC2538 {
-  _512_KB = 512,
-  _256_KB = 256,
+enum VERSION_CC26x0 {
   _128_KB = 128,
+  _64_KB = 64,
+  _32_KB = 32,
+}
+
+enum VERSION_CC26x2 {
+  _352_KB = 352,
 }
 
 // To encode data before send them to device
@@ -55,29 +59,32 @@ class Decoder {
   }
 }
 
-export class CC26x0 implements Command {
-  version: VERSION_CC2538;
+export class CC26xx implements Command {
+  version: VERSION_CC26x0 | VERSION_CC26x2;
   port: any;
   writer: any;
   reader: any;
   encoder: Encoder;
   decoder: Decoder;
+  // FIXME: change variables
   filters: object = {
     dataBits: 8,
-    baudRate: 115200, //maximum 460800 , 115200
+    baudRate: 115200, //maximum 115200
     stopbits: 1,
     parity: "none",
     flowControl: "none", // Hardware flow control using the RTS and CTS signals is enabled.
   };
-  CHIP_ID: number[] = [0xb964, 0xb965];
+  // FIXME: chip_id
+  CHIP_ID: number[] = [];
   start_address: number = 0x00200000; //start address of flash memory
   start_address_write: number = 0x00202000; //start address for writing the image
   FLASH_CTRL_DIECFG0: number = 0x400d3014; //this address contains inforamtion about device
   BOOTLOADER_CONFIGURATION_ADDRESS = new Map<number, number>([
-    [512, 0x0027ffd7],
-    [256, 0x0023ffd7],
-    [128, 0x0021ffd7],
-  ]); // for 512 ,256 and 128 KB
+    [352, 0x00057fd8], // for cc26x2
+    [128, 0x0001ffd8], // for cc26x0
+    [64, 0x0000ffd8], // for cc26x0
+    [32, 0x00007fd8], // for cc26x0
+  ]); // for 128 ,64 and 32 KB
 
   // FlashFirmware
   async FlashFirmware(port: any, image: FirmwareFile) {
@@ -86,7 +93,8 @@ export class CC26x0 implements Command {
     this.decoder = new Decoder();
 
     // check if image is compatible with this device
-    this.CheckIfImageIsCompatibleForThisDevice("cc2538", image);
+    this.CheckIfImageIsCompatibleForThisDevice("cc26xx", image);
+    return;
 
     // Open port
     PRINT("Try to open the port");
@@ -137,7 +145,7 @@ export class CC26x0 implements Command {
     await this.SizeOfFlashMemory()
       .then((size_of_flash_memory: number) => {
         assert(
-          size_of_flash_memory in VERSION_CC2538,
+          size_of_flash_memory in VERSION_CC26x0,
           "Valid sizes of flash memory are 128,256,512 but current size is ".concat(
             size_of_flash_memory.toString()
           )
@@ -218,7 +226,7 @@ export class CC26x0 implements Command {
   }
 
   // Check if image fits in flash memory
-  CheckIfImageFitsInFlashMemory(version: VERSION_CC2538, size_of_image: number): void {
+  CheckIfImageFitsInFlashMemory(version: VERSION_CC26x0 | VERSION_CC26x2, size_of_image: number): void {
     // version is the size of flash memory in KB
     if (version * 1024 < size_of_image) ERROR("Image doesn't fit in flash memory");
   }
