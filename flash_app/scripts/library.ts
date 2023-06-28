@@ -66,6 +66,7 @@ export class Device {
 
 export class FirmwareFile {
   private firmware_bytes: Uint8Array;
+  private hash: any = null;
   private size: number;
   private crc32: number;
 
@@ -76,10 +77,27 @@ export class FirmwareFile {
         this.firmware_bytes = bytes;
         this.size = this.firmware_bytes.length;
         this.CalculateCRC32();
+        // FIXME: compute sha256 of image and take the encrypted sha256 of image and decrypted
+        this.ComputeHash(this.firmware_bytes);
+        this.VerifySignature();
       })
       .catch((err) => {
         ERROR("ConvertFirmwareToBytes", err);
       });
+  }
+
+  private ComputeHash(bytes: Uint8Array): void {
+    // FIXME: exlude bytes of signature
+    this.hash = null;
+  }
+
+  private VerifySignature(): void {
+    assert(this.hash != null, "Signature must be != null");
+    let file_encrypted_hash = null;
+    let decrypted_hash = null;
+
+    if (file_encrypted_hash != this.hash) {
+    }
   }
 
   // Check file extention

@@ -72,7 +72,7 @@ export class CC2538 implements Command {
   CHIP_ID: number[] = [0xb964, 0xb965];
   start_address: number = 0x00200000; //start address of flash memory
   start_address_write: number = 0x00202000; //start address for writing the image
-  FLASH_CTRL_DIECFG0: number = 0x400d3014; //this address contains inforamtion about device
+  FLASH_CTRL_DIECFG0: number = 0x400d3014; //this address contains information about device
   BOOTLOADER_CONFIGURATION_ADDRESS = new Map<number, number>([
     [512, 0x0027ffd7],
     [256, 0x0023ffd7],
@@ -424,19 +424,11 @@ export class CC2538 implements Command {
 
   // Send Sync
   async SendSync() {
-    let data: Uint8Array = this.encoder.encode([0x55]);
+    let data: Uint8Array = this.encoder.encode([0x55, 0x55]);
 
     await this.Write(data)
       .then(() => {
-        PRINT("Send 0x55");
-      })
-      .catch((err) => {
-        ERROR("SendSynch", err);
-      });
-
-    await this.Write(data)
-      .then(() => {
-        PRINT("Send 0x55");
+        PRINT("Send 0x55,0x55");
       })
       .catch((err) => {
         ERROR("SendSynch", err);

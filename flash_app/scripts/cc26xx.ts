@@ -94,7 +94,6 @@ export class CC26xx implements Command {
 
     // check if image is compatible with this device
     this.CheckIfImageIsCompatibleForThisDevice("cc26xx", image);
-    return;
 
     // Open port
     PRINT("Try to open the port");
@@ -130,6 +129,9 @@ export class CC26xx implements Command {
         ERROR("SendSynch:", err);
       });
 
+    return;
+
+    // FIXME: take the chip id's and store it to the CHIP_ID array
     PRINT("Try to get Chip Id");
     await this.GetChipID()
       .then((chip_id) => {
@@ -145,8 +147,8 @@ export class CC26xx implements Command {
     await this.SizeOfFlashMemory()
       .then((size_of_flash_memory: number) => {
         assert(
-          size_of_flash_memory in VERSION_CC26x0,
-          "Valid sizes of flash memory are 128,256,512 but current size is ".concat(
+          size_of_flash_memory in VERSION_CC26x0 || size_of_flash_memory in VERSION_CC26x2,
+          "Valid sizes of flash memory are 32,64,128,352 but current size is ".concat(
             size_of_flash_memory.toString()
           )
         );
@@ -157,6 +159,7 @@ export class CC26xx implements Command {
         ERROR("SizeOfFlashMemory:", err);
       });
 
+    // FIXME: bootloader informations
     await this.BootloaderInformations()
       .then((informations: string) => PRINT(informations))
       .catch((err) => ERROR("IsBootloaderEnabled", err));
@@ -432,19 +435,11 @@ export class CC26xx implements Command {
 
   // Send Sync
   async SendSync() {
-    let data: Uint8Array = this.encoder.encode([0x55]);
+    let data: Uint8Array = this.encoder.encode([0x55, 0x55]);
 
     await this.Write(data)
       .then(() => {
-        PRINT("Send 0x55");
-      })
-      .catch((err) => {
-        ERROR("SendSynch", err);
-      });
-
-    await this.Write(data)
-      .then(() => {
-        PRINT("Send 0x55");
+        PRINT("Send 0x55,0x55");
       })
       .catch((err) => {
         ERROR("SendSynch", err);

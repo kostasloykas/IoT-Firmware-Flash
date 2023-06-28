@@ -133,10 +133,10 @@ async function Main() {
   // check the vendor id and product id of device
   // must be inside the supported vendors and products id
   // FIXME: change vendor and product id
-  // const product_id: number = port.getInfo().usbProductId;
-  // const vendor_id: number = port.getInfo().usbVendorId;
-  const product_id: number = 0xea30;
-  const vendor_id: number = 0x10c5;
+  const product_id: number = port.getInfo().usbProductId;
+  const vendor_id: number = port.getInfo().usbVendorId;
+  // const product_id: number = 0xea30;
+  // const vendor_id: number = 0x10c5;
 
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));
