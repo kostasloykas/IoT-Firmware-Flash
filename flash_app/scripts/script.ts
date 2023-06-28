@@ -107,11 +107,12 @@ window.addEventListener("load", function () {
 
 async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
-  let port: any = null;
+  image.VerifyTilergatiSignature();
 
   lib.UpdateProgressBar("0%");
 
   // Prompt user to select any serial port.
+  let port: any = null;
   await navigator.serial
     .requestPort()
     .then((port_: any) => {

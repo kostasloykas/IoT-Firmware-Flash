@@ -1,6 +1,7 @@
 /* library.ts */
 import $ from "jquery";
 import crc32 from "crc-32";
+import sha256, { x2 } from "sha256";
 
 declare global {
   interface Navigator {
@@ -66,7 +67,7 @@ export class Device {
 
 export class FirmwareFile {
   private firmware_bytes: Uint8Array;
-  private hash: any = null;
+  private hash: number[] = null;
   private size: number;
   private crc32: number;
 
@@ -79,7 +80,6 @@ export class FirmwareFile {
         this.CalculateCRC32();
         // FIXME: compute sha256 of image and take the encrypted sha256 of image and decrypted
         this.ComputeHash(this.firmware_bytes);
-        this.VerifySignature();
       })
       .catch((err) => {
         ERROR("ConvertFirmwareToBytes", err);
@@ -87,17 +87,18 @@ export class FirmwareFile {
   }
 
   private ComputeHash(bytes: Uint8Array): void {
-    // FIXME: exlude bytes of signature
-    this.hash = null;
+    // FIXME: exclude signature's bytes from array
+    // we convert unint8array to array with the operator [...bytes]
+    this.hash = sha256([...bytes], { asBytes: true });
   }
 
-  private VerifySignature(): void {
+  public VerifyTilergatiSignature(): void {
     assert(this.hash != null, "Signature must be != null");
-    let file_encrypted_hash = null;
+    // FIXME: define where the signature is
+    let encrypted_hash = null;
     let decrypted_hash = null;
 
-    if (file_encrypted_hash != this.hash) {
-    }
+    if (decrypted_hash != this.hash) ERROR("Signature is not from Tilergati's site");
   }
 
   // Check file extention
