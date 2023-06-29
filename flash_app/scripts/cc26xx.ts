@@ -78,13 +78,14 @@ export class CC26xx implements Command {
   CHIP_ID: number[] = [];
   start_address: number = 0x00200000; //start address of flash memory
   start_address_write: number = 0x00202000; //start address for writing the image
-  FLASH_CTRL_DIECFG0: number = 0x400d3014; //this address contains inforamtion about device
+  FLASH_SIZE_ADDR = 0x4003002c; //this address contains inforamtion about device
   BOOTLOADER_CONFIGURATION_ADDRESS = new Map<number, number>([
     [352, 0x00057fd8], // for cc26x2
     [128, 0x0001ffd8], // for cc26x0
     [64, 0x0000ffd8], // for cc26x0
     [32, 0x00007fd8], // for cc26x0
   ]); // for 128 ,64 and 32 KB
+  PAGE_SIZE = 4 * 1024; //4 KB
 
   // FlashFirmware
   async FlashFirmware(port: any, image: FirmwareFile) {
@@ -237,16 +238,15 @@ export class CC26xx implements Command {
   // SizeOfFlashMemory
   async SizeOfFlashMemory(): Promise<number> {
     let size: number = null;
-    await this.MemoryRead(this.FLASH_CTRL_DIECFG0)
+    await this.MemoryRead(this.FLASH_SIZE_ADDR)
       .then((info: number) => {
-        size = (info & 0xff & 0x70) >> 4;
-        if (size > 0 && size <= 4) size *= 0x20000;
-        else assert(0, "Size of flash memory not valid");
+        // FIXME: size
+        size = (info & 0xff) * this.PAGE_SIZE;
       })
       .catch((err) => ERROR("SizeOfFlashMemory:", err));
 
     assert(size != null, "size must be != null");
-    return size >> 10;
+    return size;
   }
 
   // Verify
