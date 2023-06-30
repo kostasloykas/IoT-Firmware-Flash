@@ -84,7 +84,7 @@ export class CC26xx implements Command {
     [128, 0x0001ffd8], // for cc26x0
     [64, 0x0000ffd8], // for cc26x0
     [32, 0x00007fd8], // for cc26x0
-  ]); // for 128 ,64 and 32 KB
+  ]); // for 352 , 128 , 64 and 32 KB
   PAGE_SIZE = 4 * 1024; //4 KB
 
   // FlashFirmware

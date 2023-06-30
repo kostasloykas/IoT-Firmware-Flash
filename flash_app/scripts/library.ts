@@ -17,7 +17,6 @@ export interface Command {
   reader: any;
   encoder: any;
   filters: object;
-  start_address: number;
 
   InvokeBootloader(...params: any): void;
   OpenPort(...params: any): void;
