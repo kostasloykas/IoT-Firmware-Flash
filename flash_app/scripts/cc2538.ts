@@ -10,6 +10,7 @@ import {
   assert,
   Command,
   UpdateProgressBar,
+  CheckIfImageIsCompatibleForThisDevice,
 } from "./library";
 
 enum VERSION_CC2538 {
@@ -86,7 +87,7 @@ export class CC2538 implements Command {
     this.decoder = new Decoder();
 
     // check if image is compatible with this device
-    this.CheckIfImageIsCompatibleForThisDevice("cc2538", image);
+    // CheckIfImageIsCompatibleForThisDevice("cc2538", image);
 
     // Open port
     PRINT("Try to open the port");
@@ -238,6 +239,10 @@ export class CC2538 implements Command {
     return size >> 10;
   }
 
+  EraseBank(...params: any): void {
+    throw new Error("Method not implemented.");
+  }
+
   // Verify
   async Verify(address: number, image: FirmwareFile) {
     let crc32_local: number = image.CRC32;
@@ -277,24 +282,12 @@ export class CC2538 implements Command {
     await this.port.close();
   }
 
-  // CheckIfImageIsValidForThisDevice
-  CheckIfImageIsCompatibleForThisDevice(device_name: string, image: FirmwareFile) {
-    const decoder: TextDecoder = new TextDecoder("utf-8");
-    const text: string = decoder.decode(image.FirmwareBytes);
-
-    // if image doesn't include
-    if (!text.includes(device_name)) ERROR("This image is not compatible with this device");
-  }
-
   // WriteFlash
   async WriteFlash(address: number, image: Uint8Array) {
-    address = 0x00202000;
     let from: number = 0;
     let to: number = from + 252;
     let remain_data_to_be_transfered: number = image.length;
     let download_needs: boolean = true;
-
-    // TODO: Check Backdoor of image
 
     // in order to skip empty data
     let empty_data = new Uint8Array(252).fill(0xff);
@@ -519,9 +512,9 @@ export class CC2538 implements Command {
       ERROR("SendData:", err);
     });
 
-    await this.WaitForAck()
+    await this.WaitForAck(200)
       .then((res: number) => {
-        if (res == NACK) ERROR("Nack came in SendData function");
+        if (res == NACK) ERROR("Nack came at SendData function");
       })
       .catch((err) => {
         ERROR("SendData:", err);
@@ -552,7 +545,7 @@ export class CC2538 implements Command {
       ERROR("Download:", err);
     });
 
-    await this.WaitForAck()
+    await this.WaitForAck(200)
       .then((response: number) => {
         assert(response == ACK, "response must be ACK");
       })

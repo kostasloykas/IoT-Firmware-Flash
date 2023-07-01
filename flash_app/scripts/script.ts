@@ -12,7 +12,7 @@ let image: lib.FirmwareFile = null;
 
 export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()],
-  [new lib.Device(0x10c5, 0xea30), new CC26xx()],
+  [new lib.Device(0x451, 0xbef3), new CC26xx()],
 ]);
 
 // ====================== FUNCTIONS ==================
@@ -137,8 +137,6 @@ async function Main() {
   // FIXME: change vendor and product id
   const product_id: number = port.getInfo().usbProductId;
   const vendor_id: number = port.getInfo().usbVendorId;
-  // const product_id: number = 0xea30;
-  // const vendor_id: number = 0x10c5;
 
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));

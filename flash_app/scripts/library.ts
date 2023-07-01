@@ -2,6 +2,7 @@
 import $ from "jquery";
 import crc32 from "crc-32";
 import sha256, { x2 } from "sha256";
+import MemoryMap, * as kos from "./modul.js";
 
 declare global {
   interface Navigator {
@@ -16,7 +17,7 @@ export interface Command {
   writer: any;
   reader: any;
   encoder: any;
-  filters: object;
+  filters: any;
 
   InvokeBootloader(...params: any): void;
   OpenPort(...params: any): void;
@@ -39,13 +40,13 @@ export interface Command {
   Write(...params: any): void;
   Reset(...params: any): void;
   Erase(...params: any): void;
+  EraseBank(...params: any): void;
   GetChipID(...params: any): void;
   SetXOSC(...params: any): void;
   SizeOfFlashMemory(...params: any): void;
   WriteFlash(...params: any): void;
   BootloaderInformations(...params: any): void;
   CheckIfImageFitsInFlashMemory(...params: any): void;
-  CheckIfImageIsCompatibleForThisDevice(...params: any): void;
 }
 
 // ============================= CLASSES =============================
@@ -124,19 +125,26 @@ export class FirmwareFile {
       // read hex file
       if (type == "hex") {
         reader.onload = function (event) {
-          let result: string = event.target?.result as string;
-          result = result.replace(/\n/g, "").replace(/:/g, "");
-          assert(isHex(result) == true, "");
-          let bytes: Uint8Array = hexStringToUint8Array(result);
-          resolve(bytes);
-        };
+          let hexdata: string = event.target?.result as string;
+          kos.default.fromHex(hexdata);
+          let memMap = MemoryMap.fromHex(hexdata);
 
+          for (let [address, dataBlock] of memMap) {
+            console.log("Data block at ", address, ", bytes: ", dataBlock);
+          }
+
+          // result = result.replace(/\n/g, "").replace(/:/g, "");
+          // assert(isHex(result) == true, "");
+          // let bytes: Uint8Array = hexStringToUint8Array(result);
+          // resolve(bytes);
+        };
         reader.readAsText(file);
         // read bin file
       } else if (type == "bin") {
         reader.onload = function (event) {
           const result = event.target?.result as ArrayBuffer;
           let bytes: Uint8Array = new Uint8Array(result);
+          DEBUG(bytes);
           resolve(bytes);
         };
 
@@ -240,20 +248,13 @@ export function assert(condition: unknown, msg: string): asserts condition {
   if (condition === false) throw new Error("Assertion: " + msg);
 }
 
-function hexStringToUint8Array(hexString: string): Uint8Array {
-  const byteLength = hexString.length / 2;
-  const uint8Array = new Uint8Array(byteLength);
+// CheckIfImageIsValidForThisDevice
+export function CheckIfImageIsCompatibleForThisDevice(device_name: string, image: FirmwareFile) {
+  const decoder: TextDecoder = new TextDecoder("utf-8");
+  const text: string = decoder.decode(image.FirmwareBytes);
+  DEBUG();
 
-  for (let i = 0; i < byteLength; i++) {
-    let start = i * 2;
-    let byte = hexString.slice(start, start + 2);
-    uint8Array[i] = parseInt(byte, 16);
-  }
-
-  return uint8Array;
-}
-
-function isHex(txt: string): boolean {
-  var regex = /[0-9A-Fa-f]{21}/g;
-  return regex.test(txt);
+  // if image doesn't include
+  if (!text.toLowerCase().includes(device_name.toLowerCase()))
+    ERROR("This image is not compatible with this device");
 }

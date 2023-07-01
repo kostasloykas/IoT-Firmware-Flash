@@ -10,6 +10,7 @@ import {
   assert,
   Command,
   UpdateProgressBar,
+  CheckIfImageIsCompatibleForThisDevice,
 } from "./library";
 
 enum VERSION_CC26x0 {
@@ -66,7 +67,6 @@ export class CC26xx implements Command {
   reader: any;
   encoder: Encoder;
   decoder: Decoder;
-  // FIXME: change variables
   filters: object = {
     dataBits: 8,
     baudRate: 115200, //maximum 115200
@@ -94,7 +94,7 @@ export class CC26xx implements Command {
     this.decoder = new Decoder();
 
     // check if image is compatible with this device
-    this.CheckIfImageIsCompatibleForThisDevice("cc26xx", image);
+    CheckIfImageIsCompatibleForThisDevice("cc26xx", image);
 
     // Open port
     PRINT("Try to open the port");
@@ -274,7 +274,7 @@ export class CC26xx implements Command {
     await this.port.setSignals({ requestToSend: false });
     await new Promise((resolve) => setTimeout(resolve, 10)); // Wait for some time
     await this.port.setSignals({ dataTerminalReady: false });
-    await new Promise((resolve) => setTimeout(resolve, 50)); // Wait for some time
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for some time
   }
 
   // Open port
@@ -286,15 +286,6 @@ export class CC26xx implements Command {
     await this.reader.releaseLock();
     await this.writer.releaseLock();
     await this.port.close();
-  }
-
-  // CheckIfImageIsValidForThisDevice
-  CheckIfImageIsCompatibleForThisDevice(device_name: string, image: FirmwareFile) {
-    const decoder: TextDecoder = new TextDecoder("utf-8");
-    const text: string = decoder.decode(image.FirmwareBytes);
-
-    // if image doesn't include
-    if (!text.includes(device_name)) ERROR("This image is not compatible with this device");
   }
 
   // WriteFlash
@@ -446,7 +437,7 @@ export class CC26xx implements Command {
       });
 
     // wait for ack
-    await this.WaitForAck()
+    await this.WaitForAck(400)
       .then((response) => {
         assert(response == ACK, "response must be ACK");
       })
@@ -463,7 +454,7 @@ export class CC26xx implements Command {
       .catch((err) => {
         ERROR("WaitForAck", err);
       });
-
+    DEBUG(data);
     if (data[0] == 0x00 && data[1] == ACK) return ACK;
     else if (data[0] == 0x00 && data[1] == NACK) return NACK;
 
@@ -621,8 +612,25 @@ export class CC26xx implements Command {
     throw new Error("Method not implemented.");
   }
   // Ping
-  Ping(): void {
-    throw new Error("Method not implemented.");
+  async Ping() {
+    let data: Uint8Array = this.encoder.encode([0x20]);
+    let packet: Packet = new Packet(data);
+
+    await this.Write(packet).catch((err) => {
+      ERROR("Ping:", err);
+    });
+
+    // wait for ack
+    await this.WaitForAck()
+      .then((response) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("Ping", err);
+      });
+
+    // Check commands status
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
   }
 
   // Write
@@ -750,5 +758,26 @@ export class CC26xx implements Command {
     }
 
     return new Uint8Array(buffer);
+  }
+
+  async EraseBank() {
+    let data: Uint8Array = this.encoder.encode([0x2c]);
+    let packet: Packet = new Packet(data);
+
+    await this.Write(packet).catch((err) => {
+      ERROR("EraseBank:", err);
+    });
+
+    // wait for ack
+    await this.WaitForAck(10000)
+      .then((response) => {
+        assert(response == ACK, "response must be ACK");
+      })
+      .catch((err) => {
+        ERROR("EraseBank", err);
+      });
+
+    // Check commands status
+    this.CheckIfStatusIsSuccess(await this.GetStatus());
   }
 }
