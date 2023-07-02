@@ -94,7 +94,7 @@ export class CC26xx implements Command {
     this.decoder = new Decoder();
 
     // check if image is compatible with this device
-    CheckIfImageIsCompatibleForThisDevice("cc26xx", image);
+    CheckIfImageIsCompatibleForThisDevice(["cc26xx"], image);
 
     // Open port
     PRINT("Try to open the port");

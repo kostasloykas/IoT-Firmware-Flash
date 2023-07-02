@@ -12,6 +12,7 @@ let image: lib.FirmwareFile = null;
 
 export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()],
+  [new lib.Device(0x2fe3, 0xa), new CC2538()],
   [new lib.Device(0x451, 0xbef3), new CC26xx()],
 ]);
 

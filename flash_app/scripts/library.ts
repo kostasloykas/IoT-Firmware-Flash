@@ -242,13 +242,15 @@ export function assert(condition: unknown, msg: string): asserts condition {
 }
 
 // CheckIfImageIsValidForThisDevice
-export function CheckIfImageIsCompatibleForThisDevice(device_name: string, image: FirmwareFile) {
+export function CheckIfImageIsCompatibleForThisDevice(devices: string[], image: FirmwareFile) {
   const decoder: TextDecoder = new TextDecoder("utf-8");
   const text: string = decoder.decode(image.FirmwareBytes);
 
-  // if image doesn't include
-  if (!text.toLowerCase().includes(device_name.toLowerCase()))
-    ERROR("This image is not compatible with this device");
+  for (const device_name of devices) {
+    if (text.toLowerCase().includes(device_name.toLowerCase())) return;
+  }
+  // if image doesn't include any keyword
+  ERROR("This image is not compatible with this device");
 }
 
 function ConvertBinaryToUint8Array(bytes: Uint8Array, memMap: MemoryMap): Uint8Array {
