@@ -68,7 +68,7 @@ export class Device {
 export class FirmwareFile {
   private firmware_bytes: Uint8Array;
   private hash: number[] = null;
-  private size: number;
+  private size: number = 0;
   private crc32: number;
 
   public constructor(input_element: HTMLInputElement) {
@@ -114,10 +114,6 @@ export class FirmwareFile {
       let file = input_element.files[0];
       let type: string = file.name.split(".").pop();
 
-      reader.onloadend = function (event) {
-        PRINT("File Uploaded");
-      };
-
       reader.onerror = function (event) {
         reject(new Error("Error reading file."));
       };
@@ -136,12 +132,12 @@ export class FirmwareFile {
           resolve(bytes);
         };
         reader.readAsText(file);
+
         // read bin file
       } else if (type == "bin") {
         reader.onload = function (event) {
           const result = event.target?.result as ArrayBuffer;
           let bytes: Uint8Array = new Uint8Array(result);
-          DEBUG(bytes);
           resolve(bytes);
         };
 
@@ -249,7 +245,6 @@ export function assert(condition: unknown, msg: string): asserts condition {
 export function CheckIfImageIsCompatibleForThisDevice(device_name: string, image: FirmwareFile) {
   const decoder: TextDecoder = new TextDecoder("utf-8");
   const text: string = decoder.decode(image.FirmwareBytes);
-  DEBUG();
 
   // if image doesn't include
   if (!text.toLowerCase().includes(device_name.toLowerCase()))

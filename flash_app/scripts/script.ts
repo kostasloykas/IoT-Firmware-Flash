@@ -107,6 +107,7 @@ window.addEventListener("load", function () {
 
 async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
+  lib.assert(image.Size != 0, "Image upload , size must be =! 0");
   // FIXME: uncomment verify tilergatis signature
   // image.VerifyTilergatiSignature();
 
@@ -134,7 +135,6 @@ async function Main() {
 
   // check the vendor id and product id of device
   // must be inside the supported vendors and products id
-  // FIXME: change vendor and product id
   const product_id: number = port.getInfo().usbProductId;
   const vendor_id: number = port.getInfo().usbVendorId;
 
