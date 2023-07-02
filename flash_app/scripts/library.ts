@@ -2,7 +2,8 @@
 import $ from "jquery";
 import crc32 from "crc-32";
 import sha256, { x2 } from "sha256";
-import MemoryMap, * as kos from "./modul.js";
+// FIXME: name
+import MemoryMap, * as kos from "./intel-hex.js";
 
 declare global {
   interface Navigator {
