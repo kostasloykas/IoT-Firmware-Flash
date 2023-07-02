@@ -2,8 +2,7 @@
 import $ from "jquery";
 import crc32 from "crc-32";
 import sha256, { x2 } from "sha256";
-// FIXME: name
-import MemoryMap, * as kos from "./intel-hex.js";
+import MemoryMap, * as intel from "./intel-hex.js";
 
 declare global {
   interface Navigator {
@@ -127,17 +126,14 @@ export class FirmwareFile {
       if (type == "hex") {
         reader.onload = function (event) {
           let hexdata: string = event.target?.result as string;
-          kos.default.fromHex(hexdata);
-          let memMap = MemoryMap.fromHex(hexdata);
+          let memMap: MemoryMap = MemoryMap.fromHex(hexdata); //convert hexdata to binary
+          let bytes: Uint8Array = new Uint8Array();
 
-          for (let [address, dataBlock] of memMap) {
-            console.log("Data block at ", address, ", bytes: ", dataBlock);
-          }
+          // add padding
+          bytes = ConvertBinaryToUint8Array(bytes, memMap);
 
-          // result = result.replace(/\n/g, "").replace(/:/g, "");
-          // assert(isHex(result) == true, "");
-          // let bytes: Uint8Array = hexStringToUint8Array(result);
-          // resolve(bytes);
+          assert(bytes.length != 0, "Bytes length must be != 0");
+          resolve(bytes);
         };
         reader.readAsText(file);
         // read bin file
@@ -258,4 +254,34 @@ export function CheckIfImageIsCompatibleForThisDevice(device_name: string, image
   // if image doesn't include
   if (!text.toLowerCase().includes(device_name.toLowerCase()))
     ERROR("This image is not compatible with this device");
+}
+
+function ConvertBinaryToUint8Array(bytes: Uint8Array, memMap: MemoryMap): Uint8Array {
+  // iterator
+  let iterator: IterableIterator<number> = memMap.keys() as IterableIterator<number>;
+  iterator.next().value;
+
+  // add padding and return the Uint8Array
+  for (let [address, dataBlock] of memMap) {
+    // console.log("Data block at ", address, ", bytes: ", dataBlock);
+    let size_of_data: number = (<Uint8Array>dataBlock).length;
+    let padding_start: number = address + size_of_data;
+    let padding_end: number = iterator.next().value;
+    let padding_needs: boolean = padding_end != null ? true : false;
+    let padding: Uint8Array = new Uint8Array(Math.abs(padding_end - padding_start - 1)).fill(0xff);
+    let bytes_length: number = bytes.length;
+    let tmp_bytes: Uint8Array = bytes;
+
+    if (padding_needs) {
+      bytes = new Uint8Array(bytes_length + size_of_data + padding.length + 1);
+      bytes.set(tmp_bytes);
+      bytes.set(dataBlock, bytes_length);
+      bytes.set(padding, bytes_length + size_of_data);
+    } else {
+      bytes = new Uint8Array(bytes_length + size_of_data);
+      bytes.set(tmp_bytes);
+      bytes.set(dataBlock, bytes_length);
+    }
+  }
+  return bytes;
 }
