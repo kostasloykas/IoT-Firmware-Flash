@@ -92,7 +92,6 @@ export class CC2538 implements Command {
     this.decoder = new Decoder();
 
     // check if image is compatible with this device
-    // FIXME: compatibility
     CheckIfImageIsCompatibleForThisDevice(["cc2538", "zoul", "zolertia"], image);
 
     // Open port
