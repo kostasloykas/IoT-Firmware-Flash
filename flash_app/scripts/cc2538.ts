@@ -6,13 +6,18 @@ import {
   NACK,
   PRINT,
   Packet,
-  RESPOND,
   assert,
   Command,
   UpdateProgressBar,
   CheckIfImageIsCompatibleForThisDevice,
 } from "./library";
 
+enum RESPOND_CC2538 {
+  COMMAND_RET_SUCCESS = 0x40,
+  COMMAND_RET_UNKNOWN_CMD = 0x41,
+  COMMAND_RET_INVALID_ADR = 0x43,
+  COMMAND_RET_FLASH_FAIL = 0x44,
+}
 enum VERSION_CC2538 {
   _512_KB = 512,
   _256_KB = 256,
@@ -595,7 +600,7 @@ export class CC2538 implements Command {
 
   // Check status
   CheckIfStatusIsSuccess(status: number): void {
-    if (status != RESPOND.COMMAND_RET_SUCCESS) {
+    if (status != RESPOND_CC2538.COMMAND_RET_SUCCESS) {
       ERROR("GetStatus is unsuccessful with status ", status);
     }
   }

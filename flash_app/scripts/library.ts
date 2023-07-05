@@ -17,6 +17,7 @@ export interface Command {
   writer: any;
   reader: any;
   encoder: any;
+  decoder: any;
   filters: any;
 
   InvokeBootloader(...params: any): void;
@@ -46,6 +47,31 @@ export interface Command {
   SizeOfFlashMemory(...params: any): void;
   WriteFlash(...params: any): void;
   BootloaderInformations(...params: any): void;
+  CheckIfImageFitsInFlashMemory(...params: any): void;
+}
+
+export interface NRFInterface {
+  port: any;
+  writer: any;
+  reader: any;
+  encoder: any;
+  decoder: any;
+  filters: any;
+
+  OpenPort(...params: any): void;
+  ClosePort(...params: any): void;
+  ProtocolVersion(...params: any): void;
+  Create(...params: any): void;
+  SetReceiptNotification(...params: any): void;
+  CRC(...params: any): void;
+  Execute(...params: any): void;
+  Select(...params: any): void;
+  GetMTU(...params: any): void;
+  Write(...params: any): void;
+  Ping(...params: any): void;
+  GetHWVersion(...params: any): void;
+  GetFWVersion(...params: any): void;
+  Abort(...params: any): void;
   CheckIfImageFitsInFlashMemory(...params: any): void;
 }
 
@@ -196,13 +222,6 @@ export class Packet {
 }
 
 // ============================= VARIABLES =============================
-
-export enum RESPOND {
-  COMMAND_RET_SUCCESS = 0x40,
-  COMMAND_RET_UNKNOWN_CMD = 0x41,
-  COMMAND_RET_INVALID_ADR = 0x43,
-  COMMAND_RET_FLASH_FAIL = 0x44,
-}
 
 export const ACK = 0xcc;
 export const NACK = 0x33;
