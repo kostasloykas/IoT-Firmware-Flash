@@ -735,7 +735,7 @@
 //   }
 
 //   // ReadInto
-//   async ReadInto(buffer: ArrayBuffer, time_to_wait: number = 0.1) {
+//   async ReadInto(buffer: ArrayBuffer, time_to_wait: number = 100) {
 //     let offset = 0;
 //     let timeout = null;
 

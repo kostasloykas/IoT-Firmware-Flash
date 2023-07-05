@@ -28,6 +28,8 @@ enum OpcodeNRF {
 // FIXME: NRF respond
 enum RESPOND_NRF {}
 
+class Slip {}
+
 export class NRF implements NRFInterface {
   port: any;
   writer: any;
@@ -39,10 +41,10 @@ export class NRF implements NRFInterface {
     baudRate: 115200, // 115200
     stopbits: 1,
     parity: "none",
-    flowControl: "none",
+    flowControl: "hardware",
   };
 
-  mtu: number;
+  MTU: number;
 
   public async FlashFirmware(port: any, image: FirmwareFile) {
     this.port = port;
@@ -66,9 +68,19 @@ export class NRF implements NRFInterface {
     this.reader = this.port.readable.getReader({ mode: "byob" });
     this.writer = this.port.writable.getWriter();
 
+    // await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
+
+    PRINT("Try to Send PRN");
     await this.SendPRN()
       .then(() => PRINT("PRN send successfully"))
       .catch((err) => ERROR("SendPRN:", err));
+
+    PRINT("Try to get MTU");
+    await this.GetMTU()
+      .then((mtu) => {
+        PRINT("MTU is", mtu);
+      })
+      .catch((err) => ERROR("GetMTU", err));
 
     await this.ClosePort()
       .then(() => PRINT("Port closed successfully"))
@@ -89,15 +101,26 @@ export class NRF implements NRFInterface {
   // value and obtain the maximum transmission unit (MTU)
   async SendPRN() {
     // prn command
-    let PRN: Uint8Array = new Uint8Array([OpcodeNRF.SetPacketReceiptNotification]);
+    let opPRN: Uint8Array = new Uint8Array([OpcodeNRF.SetPacketReceiptNotification]);
 
-    await this.Write(PRN).catch((err) => {
+    // send command
+    await this.Write(opPRN).catch((err) => {
       ERROR("SendPRN:", err);
     });
   }
 
-  GetResult(...params: any): void {
-    throw new Error("Method not implemented.");
+  async GetResult() {
+    let result: Uint8Array = null;
+    await this.ReadInto(new ArrayBuffer(1), 1000)
+      .then((buffer) => {
+        result = buffer;
+      })
+      .catch((err) => {
+        ERROR("GetResult:", err);
+      });
+
+    assert(result != null, "result must be != null");
+    DEBUG("result =", result);
   }
 
   ProtocolVersion(...params: any): void {
@@ -124,8 +147,17 @@ export class NRF implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
-  GetMTU(...params: any): void {
-    throw new Error("Method not implemented.");
+  async GetMTU(): Promise<number> {
+    let opMTU: Uint8Array = new Uint8Array([OpcodeNRF.GetMTU]);
+
+    // send command
+    await this.Write(opMTU).catch((err) => {
+      ERROR("GetMTU:", err);
+    });
+
+    // wait for response
+    await this.GetResult().then().catch();
+    return 1;
   }
 
   Ping(...params: any): void {
@@ -161,5 +193,27 @@ export class NRF implements NRFInterface {
       await this.writer.write(new Uint8Array([packet.Checksum]));
       await this.writer.write(data.Data);
     }
+  }
+
+  // ReadInto
+  async ReadInto(buffer: ArrayBuffer, time_to_wait: number = 100) {
+    let offset = 0;
+    let timeout = null;
+
+    while (offset < buffer.byteLength) {
+      timeout = setTimeout(() => {
+        this.ClosePort();
+      }, time_to_wait);
+
+      const { value, done } = await this.reader.read(new Uint8Array(buffer, offset));
+      clearTimeout(timeout);
+      if (done) {
+        break;
+      }
+      buffer = value.buffer;
+      offset += value.byteLength;
+    }
+
+    return new Uint8Array(buffer);
   }
 }
