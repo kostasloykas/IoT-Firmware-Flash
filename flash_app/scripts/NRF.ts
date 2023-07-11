@@ -28,7 +28,41 @@ enum OpcodeNRF {
 // FIXME: NRF respond
 enum RESPOND_NRF {}
 
-class Slip {}
+// Serial Line Internet Protocol (SLIP) library encodes and decodes SLIP packets
+class Slip {
+  SLIP_BYTE_END = 0o300;
+  SLIP_BYTE_ESC = 0o333;
+  SLIP_BYTE_ESC_END = 0o334;
+  SLIP_BYTE_ESC_ESC = 0o335;
+
+  public encode(data: Uint8Array): Uint8Array {
+    let encoded_data: Array<number> = new Array<number>();
+
+    for (const iter of data) {
+      if (iter == this.SLIP_BYTE_END) {
+        encoded_data.push(this.SLIP_BYTE_ESC);
+        encoded_data.push(this.SLIP_BYTE_ESC_END);
+      } else if (iter == this.SLIP_BYTE_ESC) {
+        encoded_data.push(this.SLIP_BYTE_ESC);
+        encoded_data.push(this.SLIP_BYTE_ESC_ESC);
+      } else {
+        encoded_data.push(iter);
+      }
+    }
+
+    encoded_data.push(this.SLIP_BYTE_END);
+
+    return Uint8Array.from(encoded_data);
+  }
+
+  public decode(data: Uint8Array) {
+    let decoded_data;
+    for (let iter of data) {
+    }
+
+    return decoded_data;
+  }
+}
 
 export class NRF implements NRFInterface {
   port: any;
@@ -41,7 +75,7 @@ export class NRF implements NRFInterface {
     baudRate: 115200, // 115200
     stopbits: 1,
     parity: "none",
-    flowControl: "hardware",
+    flowControl: "none",
   };
 
   MTU: number;
@@ -181,18 +215,8 @@ export class NRF implements NRFInterface {
   }
 
   // Write
-  async Write(data: Uint8Array | Packet) {
-    // if data are bytes
-    if (data instanceof Uint8Array) {
-      assert(data.length <= 253, "data length must be <= 253");
-      await this.writer.write(data);
-      // if data is packet
-    } else if (data instanceof Packet) {
-      let packet: Packet = data;
-      await this.writer.write(new Uint8Array([packet.Size]));
-      await this.writer.write(new Uint8Array([packet.Checksum]));
-      await this.writer.write(data.Data);
-    }
+  async Write(data: Uint8Array) {
+    await this.writer.write(data);
   }
 
   // ReadInto
