@@ -60,7 +60,6 @@ export interface NRFInterface {
 
   OpenPort(...params: any): void;
   ClosePort(...params: any): void;
-  SendPRN(...params: any): void;
   ProtocolVersion(...params: any): void;
   Create(...params: any): void;
   SetReceiptNotification(...params: any): void;
@@ -74,7 +73,7 @@ export interface NRFInterface {
   GetFWVersion(...params: any): void;
   Abort(...params: any): void;
   CheckIfImageFitsInFlashMemory(...params: any): void;
-  GetResult(...params: any): void;
+  GetResponse(...params: any): void;
 }
 
 // ============================= CLASSES =============================

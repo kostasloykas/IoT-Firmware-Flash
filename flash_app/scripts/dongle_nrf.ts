@@ -30,12 +30,12 @@ enum RESPOND_NRF {}
 
 // Serial Line Internet Protocol (SLIP) library encodes and decodes SLIP packets
 class Slip {
-  SLIP_BYTE_END = 0o300;
-  SLIP_BYTE_ESC = 0o333;
-  SLIP_BYTE_ESC_END = 0o334;
-  SLIP_BYTE_ESC_ESC = 0o335;
+  static SLIP_BYTE_END = 0o300;
+  static SLIP_BYTE_ESC = 0o333;
+  static SLIP_BYTE_ESC_END = 0o334;
+  static SLIP_BYTE_ESC_ESC = 0o335;
 
-  public encode(data: Uint8Array): Uint8Array {
+  static encode(data: Uint8Array): Uint8Array {
     let encoded_data: Array<number> = new Array<number>();
 
     for (const iter of data) {
@@ -54,8 +54,8 @@ class Slip {
 
     return Uint8Array.from(encoded_data);
   }
-
-  public decode(data: Uint8Array) {
+  // FIXME: decode
+  static decode(data: Uint8Array) {
     let decoded_data;
     for (let iter of data) {
     }
@@ -64,7 +64,7 @@ class Slip {
   }
 }
 
-export class NRF implements NRFInterface {
+export class NRF_DONGLE implements NRFInterface {
   port: any;
   writer: any;
   reader: any;
@@ -104,17 +104,17 @@ export class NRF implements NRFInterface {
 
     // await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
 
-    PRINT("Try to Send PRN");
-    await this.SendPRN()
-      .then(() => PRINT("PRN send successfully"))
+    PRINT("Try to Set Receipt Notification");
+    await this.SetReceiptNotification()
+      .then(() => PRINT("Receipt Notification set successfully"))
       .catch((err) => ERROR("SendPRN:", err));
 
-    PRINT("Try to get MTU");
-    await this.GetMTU()
-      .then((mtu) => {
-        PRINT("MTU is", mtu);
-      })
-      .catch((err) => ERROR("GetMTU", err));
+    // PRINT("Try to get MTU");
+    // await this.GetMTU()
+    //   .then((mtu) => {
+    //     PRINT("MTU is", mtu);
+    //   })
+    //   .catch((err) => ERROR("GetMTU", err));
 
     await this.ClosePort()
       .then(() => PRINT("Port closed successfully"))
@@ -133,28 +133,18 @@ export class NRF implements NRFInterface {
 
   // Before the actual DFU process can start, the DFU controller must set the Packet Receipt Notification (PRN)
   // value and obtain the maximum transmission unit (MTU)
-  async SendPRN() {
-    // prn command
-    let opPRN: Uint8Array = new Uint8Array([OpcodeNRF.SetPacketReceiptNotification]);
 
-    // send command
-    await this.Write(opPRN).catch((err) => {
-      ERROR("SendPRN:", err);
-    });
-  }
-
-  async GetResult() {
-    let result: Uint8Array = null;
-    await this.ReadInto(new ArrayBuffer(1), 1000)
-      .then((buffer) => {
-        result = buffer;
+  async GetResponse() {
+    let byte: Uint8Array = null;
+    await this.ReadInto(new ArrayBuffer(1))
+      .then((response) => {
+        byte = response;
       })
       .catch((err) => {
         ERROR("GetResult:", err);
       });
 
-    assert(result != null, "result must be != null");
-    DEBUG("result =", result);
+    assert(byte != null, "byte must be != null");
   }
 
   ProtocolVersion(...params: any): void {
@@ -165,8 +155,18 @@ export class NRF implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
-  SetReceiptNotification(...params: any): void {
-    throw new Error("Method not implemented.");
+  // FIXME: SetReceiptNotification
+  async SetReceiptNotification(...params: any) {
+    // prn command
+    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OpcodeNRF.SetPacketReceiptNotification]));
+
+    // send command
+    await this.Write(opPRN).catch((err) => {
+      ERROR("SendPRN:", err);
+    });
+
+    // get response
+    this.GetResponse();
   }
 
   CRC(...params: any): void {
@@ -181,6 +181,7 @@ export class NRF implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
+  // FIXME: GetMTU
   async GetMTU(): Promise<number> {
     let opMTU: Uint8Array = new Uint8Array([OpcodeNRF.GetMTU]);
 
@@ -190,7 +191,7 @@ export class NRF implements NRFInterface {
     });
 
     // wait for response
-    await this.GetResult().then().catch();
+    await this.GetResponse().then().catch();
     return 1;
   }
 
