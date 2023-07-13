@@ -15,7 +15,7 @@ export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()], // zolertia
   [new lib.Device(0x1915, 0x521f), new NRF_DONGLE()], // nrf52840 dongle bootloader
   [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-b
-  // FIXME: [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-cc2538
+  // TODO: [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-cc2538
   // [new lib.Device(0x1366, 0x1015), new NRF()], // nrf52840 DK
   // [new lib.Device(0x2fe3, 0xa), new NRF()], // nrf52840 dongle
   // [new lib.Device(0x451, 0xbef3), new CC26xx()],
@@ -88,6 +88,7 @@ window.addEventListener("load", function () {
   // When image is being upload
   $("#image").on("input", async () => {
     let path: string = $("#image").val().toString();
+
     if (path == "") {
       image_selected = false;
       Alert("Image unselected", "danger");
@@ -95,7 +96,13 @@ window.addEventListener("load", function () {
     }
     const input_element = document.querySelector('input[type="file"]') as HTMLInputElement;
 
-    image = new lib.FirmwareFile(input_element);
+    // seperate zip,hex,bin files
+
+    let extention = path.split(".").pop();
+    if (extention == "bin" || extention == "hex") image = new lib.FirmwareFile(input_element);
+    //FIXME: zip file upload
+    else if (extention == "zip") lib.assert(0, "zip file");
+    else lib.assert(0, "unrecognized extention");
 
     Alert("Image uploaded successfully", "success");
     image_selected = true;

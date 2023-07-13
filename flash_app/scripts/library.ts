@@ -3,6 +3,7 @@ import $ from "jquery";
 import crc32 from "crc-32";
 import sha256, { x2 } from "sha256";
 import MemoryMap, * as intel from "./intel-hex.js";
+import { Blob } from "buffer";
 
 declare global {
   interface Navigator {
@@ -54,8 +55,6 @@ export interface NRFInterface {
   port: any;
   writer: any;
   reader: any;
-  encoder: any;
-  decoder: any;
   filters: any;
 
   OpenPort(...params: any): void;
@@ -75,6 +74,7 @@ export interface NRFInterface {
   CheckIfImageFitsInFlashMemory(...params: any): void;
   GetResponse(...params: any): void;
   GetPacket(...params: any): void;
+  TransferInitPacket(...params: any): void;
 }
 
 // ============================= CLASSES =============================

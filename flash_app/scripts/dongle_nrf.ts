@@ -72,12 +72,12 @@ class Slip {
 
     return Uint8Array.from(encoded_data);
   }
-  // FIXME: decode
+
   static decode_add_byte(
     c: number,
-    decoded_data: number[],
+    decoded_data: Array<number>,
     current_state: number
-  ): [boolean, number, number[]] {
+  ): [boolean, number, Array<number>] {
     //
     //
     let finished: boolean = false;
@@ -115,8 +115,6 @@ export class NRF_DONGLE implements NRFInterface {
   port: any;
   writer: any;
   reader: any;
-  encoder: any;
-  decoder: any;
   filters: object = {
     dataBits: 8,
     baudRate: 115200, // 115200
@@ -125,9 +123,11 @@ export class NRF_DONGLE implements NRFInterface {
     flowControl: "none",
   };
 
-  MTU: number;
+  MTU: number = null;
 
   public async FlashFirmware(port: any, image: FirmwareFile) {
+    let init_packet: Uint8Array = null;
+
     this.port = port;
 
     // check if image is compatible with this device
@@ -149,24 +149,34 @@ export class NRF_DONGLE implements NRFInterface {
     this.reader = this.port.readable.getReader({ mode: "byob" });
     this.writer = this.port.writable.getWriter();
 
-    // await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
+    PRINT("Try to get MTU");
+    await this.GetMTU()
+      .then((mtu) => {
+        this.MTU = mtu;
+        PRINT("MTU is", mtu);
+      })
+      .catch((err) => ERROR("GetMTU", err));
 
     PRINT("Try to Set Receipt Notification");
     await this.SetReceiptNotification()
       .then(() => PRINT("Receipt Notification set successfully"))
       .catch((err) => ERROR("SendPRN:", err));
 
-    // PRINT("Try to get MTU");
-    // await this.GetMTU()
-    //   .then((mtu) => {
-    //     PRINT("MTU is", mtu);
-    //   })
-    //   .catch((err) => ERROR("GetMTU", err));
+    UpdateProgressBar("20%");
+
+    //Transfer Init Packet
+    await this.TransferInitPacket(init_packet)
+      .then(() => {
+        PRINT("Init Packet Transferred successfully");
+      })
+      .catch((err) => ERROR("TransferInitPacket", err));
+
+    //Transfer Firmware
 
     await this.ClosePort()
       .then(() => PRINT("Port closed successfully"))
       .catch((err) => ERROR("Port can't be closed ", err));
-    UpdateProgressBar("100%");
+    // UpdateProgressBar("100%");
   }
 
   async OpenPort() {
@@ -178,26 +188,89 @@ export class NRF_DONGLE implements NRFInterface {
     await this.port.close();
   }
 
-  //FIXME: GetResponse
-  async GetResponse(operation: number) {
-    // read packet
-    await this.ReadInto(new ArrayBuffer(1))
-      .then((byte) => {})
-      .catch((err) => ERROR("GetResponse:", err));
+  // Select
+  async Select(): Promise<[max_size: number, offset: number, CRC32: number]> {
+    let max_size: number = null;
+    let offset: number = null;
+    let CRC32: number = null;
+
+    // select command
+    let opSelect: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.Select, 0x01]));
+
+    // send select command
+    await this.Write(opSelect).catch((err) => {
+      ERROR("Select:", err);
+    });
+
+    // get response and check if the command executed successfully
+    await this.GetResponse(OP_CODE.Select)
+      .then((data) => {
+        assert(data.length == 12, "length of response data of select command must be 12 bytes");
+
+        const ExtractSizeOffsetCRC32 = (
+          data: Uint8Array
+        ): [max_size: number, offset: number, CRC32: number] => {
+          const dataView = new DataView(data.buffer);
+          const max_size = dataView.getUint32(0, true);
+          const offset = dataView.getUint32(4, true);
+          const CRC32 = dataView.getUint32(8, true);
+          return [max_size, offset, CRC32];
+        };
+
+        // extract data
+        [max_size, offset, CRC32] = ExtractSizeOffsetCRC32(data);
+      })
+      .catch((err) => ERROR("Select:", err));
+
+    assert(max_size != null, "max_size must be != null");
+    assert(offset != null, "offset must be != null");
+    assert(CRC32 != null, "CRC32 must be != null");
+
+    return [max_size, offset, CRC32];
   }
 
-  //FIXME: GetPacket
+  // FIXME: TransferInitPacket
+  async TransferInitPacket(init_packet: Uint8Array) {
+    await this.Select()
+      .then(([max_size, offset, CRC32]) => {
+        PRINT("Max size", max_size, "Offset", offset, "CRC32", CRC32);
+      })
+      .catch((err) => ERROR("TransferInitPacket", err));
+  }
+
+  // GetResponse
+  async GetResponse(operation: number): Promise<Uint8Array> {
+    let packet: Uint8Array = null;
+    await this.GetPacket()
+      .then((_packet) => (packet = _packet))
+      .catch((err) => ERROR("GetResponse", err));
+
+    assert(packet != null, "Packet must be != null");
+
+    if (packet[0] != OP_CODE.Response) ERROR("No response");
+    if (packet[1] != operation)
+      ERROR("Unexpected Executed OP_CODE: Expected ", operation, " Came ", packet[1]);
+    if (packet[2] != RES_CODE.Success) ERROR("Command didn't succeed");
+
+    // return the data only
+    return packet.slice(3);
+  }
+
+  // GetPacket
   async GetPacket(): Promise<Uint8Array> {
     let current_state = Slip.SLIP_STATE_DECODING;
     let finished = false;
-    let decoded_data: number[];
+    let decoded_data: Array<number> = new Array<number>();
     let byte: number;
 
+    // start creating packet
     while (!finished) {
       //read 1 byte
       await this.ReadInto(new ArrayBuffer(1))
         .then((buffer) => (byte = buffer[0]))
         .catch((err) => ERROR("GetPacket", err));
+
+      // decode every byte
       [finished, current_state, decoded_data] = Slip.decode_add_byte(byte, decoded_data, current_state);
     }
 
@@ -212,22 +285,22 @@ export class NRF_DONGLE implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
-  // FIXME: SetReceiptNotification
+  // SetReceiptNotification
   // Before the actual DFU process can start, the DFU controller must set the Packet Receipt Notification (PRN)
   // value and obtain the maximum transmission unit (MTU)
-  async SetReceiptNotification(...params: any) {
+  async SetReceiptNotification() {
     // prn command
-    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x00, 0x01]));
+    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x00, 0x00])); // dont send validation
 
     // send command
     await this.Write(opPRN).catch((err) => {
       ERROR("SendPRN:", err);
     });
 
-    // get response
-    await this.GetResponse(OP_CODE.SetPacketReceiptNotification)
-      .then((result) => {})
-      .catch((err) => ERROR("SetReceiptNotification", err));
+    // get response and check if the command executed successfully
+    await this.GetResponse(OP_CODE.SetPacketReceiptNotification).catch((err) =>
+      ERROR("SetReceiptNotification", err)
+    );
   }
 
   CRC(...params: any): void {
@@ -238,23 +311,32 @@ export class NRF_DONGLE implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
-  Select(...params: any): void {
-    throw new Error("Method not implemented.");
-  }
-
-  // FIXME: GetMTU
+  // GetMTU
   async GetMTU(): Promise<number> {
-    let opMTU: Uint8Array = new Uint8Array([OP_CODE.GetMTU]);
-
+    let opMTU: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.GetMTU]));
+    let mtu: number = null;
     // send command
     await this.Write(opMTU).catch((err) => ERROR("GetMTU:", err));
 
     // wait for response
     await this.GetResponse(OP_CODE.GetMTU)
-      .then((result) => {})
-      .catch((err) => {});
-    //FIXME: return
-    return 1;
+      .then((data) => {
+        // maximum data size that can be sent is (MTU/2) - 2
+
+        // convert data in little endian format in order to obtain mtu
+        const ConvertInLittleEndianFormat = (data: Uint8Array): number => {
+          const dataView = new DataView(data.buffer);
+          const mtu = dataView.getUint16(0, true);
+          return mtu;
+        };
+
+        mtu = (ConvertInLittleEndianFormat(data) - 1) / 2 - 1;
+      })
+      .catch((err) => ERROR("GetMTU", err));
+
+    assert(mtu != null, "mtu must be != null");
+
+    return mtu;
   }
 
   Ping(...params: any): void {
