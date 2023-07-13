@@ -74,6 +74,7 @@ export interface NRFInterface {
   Abort(...params: any): void;
   CheckIfImageFitsInFlashMemory(...params: any): void;
   GetResponse(...params: any): void;
+  GetPacket(...params: any): void;
 }
 
 // ============================= CLASSES =============================

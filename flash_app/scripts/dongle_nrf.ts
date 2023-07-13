@@ -10,7 +10,8 @@ import {
   assert,
 } from "./library";
 
-enum OpcodeNRF {
+// operation code
+enum OP_CODE {
   ProtocolVersion = 0x00,
   Create = 0x01,
   SetPacketReceiptNotification = 0x02,
@@ -23,10 +24,23 @@ enum OpcodeNRF {
   GetHWVersion = 0x0a,
   GetFWVersion = 0x0b,
   Abort = 0x0c,
+  Response = 0x60,
 }
 
-// FIXME: NRF respond
-enum RESPOND_NRF {}
+// result code
+enum RES_CODE {
+  InvalidCode = 0x00,
+  Success = 0x01,
+  NotSupported = 0x02,
+  InvalidParameter = 0x03,
+  InsufficientResources = 0x04,
+  InvalidObject = 0x05,
+  InvalidSignature = 0x06,
+  UnsupportedType = 0x07,
+  OperationNotPermitted = 0x08,
+  OperationFailed = 0x0a,
+  ExtendedError = 0x0b,
+}
 
 // Serial Line Internet Protocol (SLIP) library encodes and decodes SLIP packets
 class Slip {
@@ -34,6 +48,10 @@ class Slip {
   static SLIP_BYTE_ESC = 0o333;
   static SLIP_BYTE_ESC_END = 0o334;
   static SLIP_BYTE_ESC_ESC = 0o335;
+
+  static SLIP_STATE_DECODING = 1;
+  static SLIP_STATE_ESC_RECEIVED = 2;
+  static SLIP_STATE_CLEARING_INVALID_PACKET = 3;
 
   static encode(data: Uint8Array): Uint8Array {
     let encoded_data: Array<number> = new Array<number>();
@@ -55,12 +73,41 @@ class Slip {
     return Uint8Array.from(encoded_data);
   }
   // FIXME: decode
-  static decode(data: Uint8Array) {
-    let decoded_data;
-    for (let iter of data) {
+  static decode_add_byte(
+    c: number,
+    decoded_data: number[],
+    current_state: number
+  ): [boolean, number, number[]] {
+    //
+    //
+    let finished: boolean = false;
+
+    if (current_state === Slip.SLIP_STATE_DECODING) {
+      if (c === Slip.SLIP_BYTE_END) {
+        finished = true;
+      } else if (c === Slip.SLIP_BYTE_ESC) {
+        current_state = Slip.SLIP_STATE_ESC_RECEIVED;
+      } else {
+        decoded_data.push(c);
+      }
+    } else if (current_state === Slip.SLIP_STATE_ESC_RECEIVED) {
+      if (c === Slip.SLIP_BYTE_ESC_END) {
+        decoded_data.push(Slip.SLIP_BYTE_END);
+        current_state = Slip.SLIP_STATE_DECODING;
+      } else if (c === Slip.SLIP_BYTE_ESC_ESC) {
+        decoded_data.push(Slip.SLIP_BYTE_ESC);
+        current_state = Slip.SLIP_STATE_DECODING;
+      } else {
+        current_state = Slip.SLIP_STATE_CLEARING_INVALID_PACKET;
+      }
+    } else if (current_state === Slip.SLIP_STATE_CLEARING_INVALID_PACKET) {
+      if (c === Slip.SLIP_BYTE_END) {
+        current_state = Slip.SLIP_STATE_DECODING;
+        decoded_data = [];
+      }
     }
 
-    return decoded_data;
+    return [finished, current_state, decoded_data];
   }
 }
 
@@ -131,20 +178,30 @@ export class NRF_DONGLE implements NRFInterface {
     await this.port.close();
   }
 
-  // Before the actual DFU process can start, the DFU controller must set the Packet Receipt Notification (PRN)
-  // value and obtain the maximum transmission unit (MTU)
-
-  async GetResponse() {
-    let byte: Uint8Array = null;
+  //FIXME: GetResponse
+  async GetResponse(operation: number) {
+    // read packet
     await this.ReadInto(new ArrayBuffer(1))
-      .then((response) => {
-        byte = response;
-      })
-      .catch((err) => {
-        ERROR("GetResult:", err);
-      });
+      .then((byte) => {})
+      .catch((err) => ERROR("GetResponse:", err));
+  }
 
-    assert(byte != null, "byte must be != null");
+  //FIXME: GetPacket
+  async GetPacket(): Promise<Uint8Array> {
+    let current_state = Slip.SLIP_STATE_DECODING;
+    let finished = false;
+    let decoded_data: number[];
+    let byte: number;
+
+    while (!finished) {
+      //read 1 byte
+      await this.ReadInto(new ArrayBuffer(1))
+        .then((buffer) => (byte = buffer[0]))
+        .catch((err) => ERROR("GetPacket", err));
+      [finished, current_state, decoded_data] = Slip.decode_add_byte(byte, decoded_data, current_state);
+    }
+
+    return Uint8Array.from(decoded_data);
   }
 
   ProtocolVersion(...params: any): void {
@@ -156,9 +213,11 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   // FIXME: SetReceiptNotification
+  // Before the actual DFU process can start, the DFU controller must set the Packet Receipt Notification (PRN)
+  // value and obtain the maximum transmission unit (MTU)
   async SetReceiptNotification(...params: any) {
     // prn command
-    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OpcodeNRF.SetPacketReceiptNotification]));
+    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x00, 0x01]));
 
     // send command
     await this.Write(opPRN).catch((err) => {
@@ -166,7 +225,9 @@ export class NRF_DONGLE implements NRFInterface {
     });
 
     // get response
-    this.GetResponse();
+    await this.GetResponse(OP_CODE.SetPacketReceiptNotification)
+      .then((result) => {})
+      .catch((err) => ERROR("SetReceiptNotification", err));
   }
 
   CRC(...params: any): void {
@@ -183,15 +244,16 @@ export class NRF_DONGLE implements NRFInterface {
 
   // FIXME: GetMTU
   async GetMTU(): Promise<number> {
-    let opMTU: Uint8Array = new Uint8Array([OpcodeNRF.GetMTU]);
+    let opMTU: Uint8Array = new Uint8Array([OP_CODE.GetMTU]);
 
     // send command
-    await this.Write(opMTU).catch((err) => {
-      ERROR("GetMTU:", err);
-    });
+    await this.Write(opMTU).catch((err) => ERROR("GetMTU:", err));
 
     // wait for response
-    await this.GetResponse().then().catch();
+    await this.GetResponse(OP_CODE.GetMTU)
+      .then((result) => {})
+      .catch((err) => {});
+    //FIXME: return
     return 1;
   }
 
