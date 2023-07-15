@@ -7,10 +7,11 @@ import {
   PRINT,
   Packet,
   assert,
-  Command,
   UpdateProgressBar,
   CheckIfImageIsCompatibleForThisDevice,
-} from "./library";
+} from "./classes";
+
+import { Command } from "./interfaces";
 
 enum RESPOND_CC2538 {
   COMMAND_RET_SUCCESS = 0x40,

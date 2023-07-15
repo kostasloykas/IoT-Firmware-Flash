@@ -1,6 +1,5 @@
 import {
   DEBUG,
-  NRFInterface,
   FirmwareFile,
   CheckIfImageIsCompatibleForThisDevice,
   PRINT,
@@ -9,7 +8,9 @@ import {
   Packet,
   assert,
   ZipFile,
-} from "./library";
+} from "./classes";
+
+import { NRFInterface } from "./interfaces";
 
 // operation code
 enum OP_CODE {
@@ -128,21 +129,16 @@ export class NRF_DONGLE implements NRFInterface {
 
   public async FlashFirmware(port: any, zip_file: ZipFile) {
     let init_packet: Uint8Array;
-    let image: Uint8Array;
+    let image: FirmwareFile;
 
     PRINT("Extracting files from zip");
-    [image, init_packet] = zip_file.ExtractFirmwareAndInitPacket();
-
-    // TODO: uncomment this
-    // let image: Uint8Array = null;
+    [image, init_packet] = await zip_file.ExtractFirmwareAndInitPacket();
+    PRINT("Files extracted");
 
     this.port = port;
 
-    // TODO: uncomment this
     // check if image is compatible with this device
-    // CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
-
-    return;
+    CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
 
     // Open port
     PRINT("Try to open the port");
@@ -174,6 +170,7 @@ export class NRF_DONGLE implements NRFInterface {
 
     UpdateProgressBar("20%");
 
+    return;
     //Transfer Init Packet
     await this.TransferInitPacket(init_packet)
       .then(() => {

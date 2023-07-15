@@ -1,4 +1,4 @@
-/* library.ts */
+/* classes.ts */
 import $ from "jquery";
 import crc32 from "crc-32";
 import sha256, { x2 } from "sha256";
@@ -10,72 +10,6 @@ declare global {
   interface Navigator {
     serial: any;
   }
-}
-
-// ============================= INTERFACES =============================
-
-export interface Command {
-  port: any;
-  writer: any;
-  reader: any;
-  encoder: any;
-  decoder: any;
-  filters: any;
-
-  InvokeBootloader(...params: any): void;
-  OpenPort(...params: any): void;
-  ClosePort(...params: any): void;
-  MemoryWrite(...params: any): void;
-  MemoryRead(...params: any): void;
-  SendAck(...params: any): void;
-  SendNAck(...params: any): void;
-  ReceivePacket(...params: any): void;
-  SendSync(...params: any): void;
-  WaitForAck(...params: any): void;
-  CRC32(...params: any): void;
-  Download(...params: any): void;
-  Verify(...params: any): void;
-  Run(...params: any): void;
-  GetStatus(...params: any): void;
-  CheckIfStatusIsSuccess(...params: any): void;
-  Ping(...params: any): void;
-  SendData(...params: any): void;
-  Write(...params: any): void;
-  Reset(...params: any): void;
-  Erase(...params: any): void;
-  EraseBank(...params: any): void;
-  GetChipID(...params: any): void;
-  SetXOSC(...params: any): void;
-  SizeOfFlashMemory(...params: any): void;
-  WriteFlash(...params: any): void;
-  BootloaderInformations(...params: any): void;
-  CheckIfImageFitsInFlashMemory(...params: any): void;
-}
-
-export interface NRFInterface {
-  port: any;
-  writer: any;
-  reader: any;
-  filters: any;
-
-  OpenPort(...params: any): void;
-  ClosePort(...params: any): void;
-  ProtocolVersion(...params: any): void;
-  Create(...params: any): void;
-  SetReceiptNotification(...params: any): void;
-  CRC(...params: any): void;
-  Execute(...params: any): void;
-  Select(...params: any): void;
-  GetMTU(...params: any): void;
-  Write(...params: any): void;
-  Ping(...params: any): void;
-  GetHWVersion(...params: any): void;
-  GetFWVersion(...params: any): void;
-  Abort(...params: any): void;
-  CheckIfImageFitsInFlashMemory(...params: any): void;
-  GetResponse(...params: any): void;
-  GetPacket(...params: any): void;
-  TransferInitPacket(...params: any): void;
 }
 
 // ============================= CLASSES =============================
@@ -98,13 +32,30 @@ export class FirmwareFile {
   private firmware_bytes: Uint8Array;
   private hash: number[] = null;
   private size: number = 0;
-  private crc32: number;
+  private crc32: number = null;
 
-  constructor(input_element: HTMLInputElement) {
+  //we have 2 constructors
+  constructor(input_element: HTMLInputElement, type: string);
+  constructor(bytes: Uint8Array, type: string);
+  constructor(...param: any[]) {
+    assert(param.length == 2, "Constructor accepts only two parameters");
+    let type: string = param[1];
+    let input_element: HTMLInputElement = param[0];
+    let bytes: Uint8Array = param[0];
+
+    // HTMLInputElement constructor
+    if (type == "HTMLInputElement") this.constructorInputElement(input_element);
+    // Uint8Array constructor
+    else if (type == "Uint8Array") this.constructorUint8Array(bytes);
+    else assert(0, "Unrecognized type");
+  }
+
+  public constructorInputElement(input_element: HTMLInputElement) {
     CheckFileExtention(input_element.files[0].name);
     this.ConvertFirmwareToBytes(input_element)
       .then((bytes) => {
         this.firmware_bytes = bytes;
+        DEBUG(bytes);
         this.size = this.firmware_bytes.length;
         this.CalculateCRC32();
         // FIXME: compute sha256 of image and take the encrypted sha256 of image and decrypted
@@ -113,6 +64,13 @@ export class FirmwareFile {
       .catch((err) => {
         ERROR("ConvertFirmwareToBytes", err);
       });
+  }
+
+  public constructorUint8Array(bytes: Uint8Array) {
+    this.firmware_bytes = bytes;
+    this.size = this.firmware_bytes.length;
+    this.CalculateCRC32();
+    this.ComputeHash(this.firmware_bytes);
   }
 
   private ComputeHash(bytes: Uint8Array): void {
@@ -188,15 +146,16 @@ export class FirmwareFile {
 
 export class ZipFile {
   private zip_file: AdmZip = null;
-  private firmware: Uint8Array = null;
+  private zip_size: number = 0;
+  private firmware: FirmwareFile = null;
   private init_packet: Uint8Array = null;
-  private firmware_size: number;
 
   public constructor(input_element: HTMLInputElement) {
     CheckFileExtention(input_element.files[0].name);
     this.ConvertZipFileToBytes(input_element)
       .then((bytes) => {
         this.zip_file = new AdmZip(Buffer.from(bytes));
+        this.zip_size = bytes.length;
       })
       .catch((err) => ERROR("constructor ZipFile", err));
   }
@@ -224,8 +183,8 @@ export class ZipFile {
     });
   }
 
-  // FIXME: ExtractFirmwareInitPacket
-  public ExtractFirmwareAndInitPacket(): [firmware: Uint8Array, init_packet: Uint8Array] {
+  // ExtractFirmwareInitPacket
+  public async ExtractFirmwareAndInitPacket(): Promise<[firmware: FirmwareFile, init_packet: Uint8Array]> {
     assert(this.zip_file != null, "Zip file must be != null");
 
     // extract firmware and init packet
@@ -234,22 +193,21 @@ export class ZipFile {
       const extention: string = name.split(".").pop();
       const data: Uint8Array = Uint8Array.from(entry.getData());
 
-      DEBUG(name);
       // bin file
-      if (extention == "bin") this.firmware = data;
+      if (extention == "bin") this.firmware = new FirmwareFile(data, "Uint8Array");
       // dat file
       else if (extention == "dat") this.init_packet = data;
     });
 
-    assert(this.firmware != null, "Zip file must be != null");
-    assert(this.init_packet != null, "Zip file must be != null");
+    assert(this.firmware != null, "firmware must be != null");
+    assert(this.init_packet != null, "init packet must be != null");
 
     return [this.firmware, this.init_packet];
   }
 
   // this is firmware size
   public get Size(): number {
-    return this.firmware_size;
+    return this.zip_size;
   }
 }
 

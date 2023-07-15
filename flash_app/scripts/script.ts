@@ -1,6 +1,6 @@
 /* script.ts */
 import $ from "jquery";
-import * as lib from "./library";
+import * as lib from "./classes";
 import { CC2538 } from "./cc2538";
 import { NRF_DONGLE } from "./dongle_nrf";
 // import { CC26xx } from "./cc26xx";
@@ -99,7 +99,8 @@ window.addEventListener("load", function () {
     // seperate zip,hex,bin files
 
     let extention = path.split(".").pop();
-    if (extention == "bin" || extention == "hex") image = new lib.FirmwareFile(input_element);
+    if (extention == "bin" || extention == "hex")
+      image = new lib.FirmwareFile(input_element, "HTMLInputElement");
     //FIXME: zip file upload
     else if (extention == "zip") image = new lib.ZipFile(input_element);
     else lib.assert(0, "unrecognized extention");
