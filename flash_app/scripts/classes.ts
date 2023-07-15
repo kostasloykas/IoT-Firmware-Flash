@@ -149,6 +149,7 @@ export class ZipFile {
   private zip_size: number = 0;
   private firmware: FirmwareFile = null;
   private init_packet: Uint8Array = null;
+  private json: any = null; //json file
 
   public constructor(input_element: HTMLInputElement) {
     CheckFileExtention(input_element.files[0].name);
@@ -167,10 +168,12 @@ export class ZipFile {
       let file = input_element.files[0];
       let type: string = file.name.split(".").pop();
 
+      // on error
       reader.onerror = function (event) {
         reject(new Error("Error reading file."));
       };
 
+      // read zip file
       if (type == "zip") {
         reader.onload = function (event) {
           const result = event.target?.result as ArrayBuffer;
@@ -179,7 +182,7 @@ export class ZipFile {
         };
 
         reader.readAsArrayBuffer(file);
-      } else ERROR("unknown type of input file");
+      } else ERROR("Unknown type of input file");
     });
   }
 
@@ -197,11 +200,21 @@ export class ZipFile {
       if (extention == "bin") this.firmware = new FirmwareFile(data, "Uint8Array");
       // dat file
       else if (extention == "dat") this.init_packet = data;
+      //json file
+      else if (extention == "json") {
+        const json_file: string = new TextDecoder().decode(data);
+        this.json = JSON.parse(json_file);
+      }
     });
 
     assert(this.firmware != null, "firmware must be != null");
     assert(this.init_packet != null, "init packet must be != null");
+    assert(this.json != null, "manifest must be != null");
 
+    // check if this image is for application update of nrf device
+    if (this.json.manifest.application == null) ERROR("This image doesn't update application image");
+
+    // return firmware and init packet
     return [this.firmware, this.init_packet];
   }
 
