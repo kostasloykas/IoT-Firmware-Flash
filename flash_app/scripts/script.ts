@@ -9,7 +9,7 @@ import { NRF_DONGLE } from "./dongle_nrf";
 
 let image_selected: boolean = false;
 let timeout: any = null;
-let image: lib.FirmwareFile = null;
+let image: lib.FirmwareFile | lib.ZipFile = null;
 
 export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()], // zolertia
@@ -101,7 +101,7 @@ window.addEventListener("load", function () {
     let extention = path.split(".").pop();
     if (extention == "bin" || extention == "hex") image = new lib.FirmwareFile(input_element);
     //FIXME: zip file upload
-    else if (extention == "zip") lib.assert(0, "zip file");
+    else if (extention == "zip") image = new lib.ZipFile(input_element);
     else lib.assert(0, "unrecognized extention");
 
     Alert("Image uploaded successfully", "success");
@@ -120,7 +120,7 @@ window.addEventListener("load", function () {
 
 async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
-  lib.assert(image.Size != 0, "Image upload , size must be =! 0");
+  lib.assert(image.Size != 0, "Image upload , size must be != 0");
   // FIXME: uncomment verify tilergatis signature
   // image.VerifyTilergatiSignature();
 
@@ -161,7 +161,7 @@ async function Main() {
 
   await device.FlashFirmware(port, image);
 
-  Alert("The process finished succsfully", "success");
+  Alert("The process finished successfully", "success");
   UpdatePage(); // update page after flashing
   return;
 }

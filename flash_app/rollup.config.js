@@ -6,6 +6,8 @@ import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
 import typescript from 'rollup-plugin-typescript2';
 import css from 'rollup-plugin-css-only';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
+
 
 
 
@@ -79,6 +81,7 @@ export default {
 		//  We need to configure Rollup to handle non-JavaScript files,
 		//  such as TypeScript files, using appropriate plugins.
 		typescript(),
+		nodePolyfills(),
 	],
 	watch: {
 		clearScreen: false

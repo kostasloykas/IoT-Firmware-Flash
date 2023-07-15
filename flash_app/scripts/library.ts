@@ -3,7 +3,8 @@ import $ from "jquery";
 import crc32 from "crc-32";
 import sha256, { x2 } from "sha256";
 import MemoryMap, * as intel from "./intel-hex.js";
-import { Blob } from "buffer";
+import AdmZip from "adm-zip";
+import { Buffer } from "buffer";
 
 declare global {
   interface Navigator {
@@ -99,8 +100,8 @@ export class FirmwareFile {
   private size: number = 0;
   private crc32: number;
 
-  public constructor(input_element: HTMLInputElement) {
-    this.CheckFileExtention(input_element.files[0].name);
+  constructor(input_element: HTMLInputElement) {
+    CheckFileExtention(input_element.files[0].name);
     this.ConvertFirmwareToBytes(input_element)
       .then((bytes) => {
         this.firmware_bytes = bytes;
@@ -127,12 +128,6 @@ export class FirmwareFile {
     let decrypted_hash = null;
 
     if (decrypted_hash != this.hash) ERROR("Signature is not from Tilergati's site");
-  }
-
-  // Check file extention
-  private CheckFileExtention(name: string): void {
-    let extention: string = name.split(".").pop().toUpperCase();
-    if (!(extention in FILE_EXTENTION)) ERROR("File extention is not supported");
   }
 
   // Convert firmware to bytes
@@ -191,6 +186,73 @@ export class FirmwareFile {
   }
 }
 
+export class ZipFile {
+  private zip_file: AdmZip = null;
+  private firmware: Uint8Array = null;
+  private init_packet: Uint8Array = null;
+  private firmware_size: number;
+
+  public constructor(input_element: HTMLInputElement) {
+    CheckFileExtention(input_element.files[0].name);
+    this.ConvertZipFileToBytes(input_element)
+      .then((bytes) => {
+        this.zip_file = new AdmZip(Buffer.from(bytes));
+      })
+      .catch((err) => ERROR("constructor ZipFile", err));
+  }
+
+  // Convert zip file to bytes
+  private async ConvertZipFileToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
+    return await new Promise<Uint8Array>((resolve, reject) => {
+      const reader = new FileReader();
+      let file = input_element.files[0];
+      let type: string = file.name.split(".").pop();
+
+      reader.onerror = function (event) {
+        reject(new Error("Error reading file."));
+      };
+
+      if (type == "zip") {
+        reader.onload = function (event) {
+          const result = event.target?.result as ArrayBuffer;
+          let bytes: Uint8Array = new Uint8Array(result);
+          resolve(bytes);
+        };
+
+        reader.readAsArrayBuffer(file);
+      } else ERROR("unknown type of input file");
+    });
+  }
+
+  // FIXME: ExtractFirmwareInitPacket
+  public ExtractFirmwareAndInitPacket(): [firmware: Uint8Array, init_packet: Uint8Array] {
+    assert(this.zip_file != null, "Zip file must be != null");
+
+    // extract firmware and init packet
+    this.zip_file.forEach((entry) => {
+      const name: string = entry.name;
+      const extention: string = name.split(".").pop();
+      const data: Uint8Array = Uint8Array.from(entry.getData());
+
+      DEBUG(name);
+      // bin file
+      if (extention == "bin") this.firmware = data;
+      // dat file
+      else if (extention == "dat") this.init_packet = data;
+    });
+
+    assert(this.firmware != null, "Zip file must be != null");
+    assert(this.init_packet != null, "Zip file must be != null");
+
+    return [this.firmware, this.init_packet];
+  }
+
+  // this is firmware size
+  public get Size(): number {
+    return this.firmware_size;
+  }
+}
+
 export class Packet {
   private size: number;
   private checksum: number;
@@ -231,6 +293,7 @@ export const NACK = 0x33;
 export enum FILE_EXTENTION {
   HEX = "hex",
   BIN = "bin",
+  ZIP = "zip",
 }
 
 // ============================= FUNCTIONS =============================
@@ -265,7 +328,13 @@ export function assert(condition: unknown, msg: string): asserts condition {
 // CheckIfImageIsValidForThisDevice
 export function CheckIfImageIsCompatibleForThisDevice(devices: string[], image: FirmwareFile) {
   const decoder: TextDecoder = new TextDecoder("utf-8");
-  const text: string = decoder.decode(image.FirmwareBytes);
+  //take only numbers and letters
+  const text: string = decoder.decode(
+    image.FirmwareBytes.filter(
+      (value, i, arr) =>
+        (arr[i] >= 65 && arr[i] <= 90) || (arr[i] >= 48 && arr[i] <= 57) || (arr[i] >= 97 && arr[i] <= 122)
+    )
+  );
 
   for (const device_name of devices) {
     if (text.toLowerCase().includes(device_name.toLowerCase())) return;
@@ -302,4 +371,10 @@ function ConvertBinaryToUint8Array(bytes: Uint8Array, memMap: MemoryMap): Uint8A
     }
   }
   return bytes;
+}
+
+// Check file extention
+function CheckFileExtention(name: string): void {
+  let extention: string = name.split(".").pop().toUpperCase();
+  if (!(extention in FILE_EXTENTION)) ERROR("File extention is not supported");
 }

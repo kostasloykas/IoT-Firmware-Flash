@@ -8,6 +8,7 @@ import {
   ERROR,
   Packet,
   assert,
+  ZipFile,
 } from "./library";
 
 // operation code
@@ -125,14 +126,23 @@ export class NRF_DONGLE implements NRFInterface {
 
   MTU: number = null;
 
-  public async FlashFirmware(port: any, image: FirmwareFile) {
-    let init_packet: Uint8Array = null;
+  public async FlashFirmware(port: any, zip_file: ZipFile) {
+    let init_packet: Uint8Array;
+    let image: Uint8Array;
+
+    PRINT("Extracting files from zip");
+    [image, init_packet] = zip_file.ExtractFirmwareAndInitPacket();
+
+    // TODO: uncomment this
+    // let image: Uint8Array = null;
 
     this.port = port;
 
+    // TODO: uncomment this
     // check if image is compatible with this device
-    // FIXME: compatibility
-    // CheckIfImageIsCompatibleForThisDevice(["cc2538", "zoul", "zolertia"], image);
+    // CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
+
+    return;
 
     // Open port
     PRINT("Try to open the port");
