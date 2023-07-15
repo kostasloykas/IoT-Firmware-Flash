@@ -269,10 +269,6 @@ export enum FILE_EXTENTION {
 
 // ============================= FUNCTIONS =============================
 
-// Check if device supported
-// If yes the returns an instance of device
-// If no returns null
-
 export function PRINT(...anything: any): void {
   console.log(anything);
 }
