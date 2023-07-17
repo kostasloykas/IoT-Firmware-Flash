@@ -167,7 +167,7 @@ export class NRF_DONGLE implements NRFInterface {
     PRINT("Try to Set Receipt Notification");
     await this.SetReceiptNotification()
       .then(() => PRINT("Receipt Notification set successfully"))
-      .catch((err) => ERROR("SendPRN:", err));
+      .catch((err) => ERROR("SetReceiptNotification", err));
 
     UpdateProgressBar("20%");
 
@@ -178,6 +178,8 @@ export class NRF_DONGLE implements NRFInterface {
         PRINT("Init Packet Transferred successfully");
       })
       .catch((err) => ERROR("TransferInitPacket", err));
+
+    UpdateProgressBar("30%");
 
     //Transfer Firmware
 
@@ -195,6 +197,9 @@ export class NRF_DONGLE implements NRFInterface {
     await this.writer.releaseLock();
     await this.port.close();
   }
+
+  // FIXME: TransferFirmware
+  async TransferFirmware() {}
 
   // Select
   async Select(): Promise<[max_size: number, offset: number, CRC32: number]> {
@@ -237,7 +242,7 @@ export class NRF_DONGLE implements NRFInterface {
     return [max_size, offset, CRC32];
   }
 
-  //FIXME: WriteCommand
+  // WriteCommand
   async WriteCommand(data: Uint8Array) {
     // write command
     let opWRITE: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.Write, ...data]));
@@ -246,35 +251,27 @@ export class NRF_DONGLE implements NRFInterface {
     await this.Write(opWRITE).catch((err) => {
       ERROR("WriteCommand:", err);
     });
-
-    // get response and check if the command executed successfully
-    // CRC expected
-    await this.GetResponse(OP_CODE.CRC).catch((err) => ERROR("WriteCommand", err));
   }
 
-  // FIXME: SendData
+  // SendData
   async SendData(data: Uint8Array, crc = 0, offset = 0) {
     const validate_crc = (crc1: number, crc2: number, offset1: number, offset2: number) => {
       if (crc1 != crc2) ERROR("Failed CRC validation");
       if (offset1 != offset2) ERROR("Failed offset validation");
     };
 
-    let current_prn = 0;
+    let current_prn: number = 0;
 
     // send data
     for (let start = offset; start < data.length; start += this.MTU) {
       const to_transfer: Uint8Array = data.slice(start, start + this.MTU);
-      // let kos = new Uint8Array(256);
-      // kos.fill(0);
-      // kos.set(to_transfer, 0);
-      DEBUG(to_transfer.length);
 
       await this.WriteCommand(to_transfer).catch((err) => ERROR("SendData", err));
 
-      crc = crc32.buf(to_transfer, crc) & 0xffffffff;
+      crc = crc32.buf(to_transfer, crc) >>> 0;
+
       offset += to_transfer.length;
       current_prn++;
-      DEBUG(crc);
 
       // validate crc
       if (current_prn == this.PRN) {
@@ -303,8 +300,6 @@ export class NRF_DONGLE implements NRFInterface {
     // crc command
     await this.CRC()
       .then(([remote_crc, remote_offset]) => {
-        DEBUG(remote_crc, remote_offset);
-
         validate_crc(crc, remote_crc, offset, remote_offset);
       })
       .catch((err) => ERROR("SendData", err));
@@ -441,7 +436,7 @@ export class NRF_DONGLE implements NRFInterface {
     // prn command
     // validation every 256 sended packets
     this.PRN = 256;
-    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x01, 0x00]));
+    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x00, 0x01]));
 
     // send command
     await this.Write(opPRN).catch((err) => {
@@ -454,7 +449,7 @@ export class NRF_DONGLE implements NRFInterface {
     );
   }
 
-  // FIXME: CRC
+  // CRC
   async CRC(): Promise<[crc: number, offset: number]> {
     let crc: number = null,
       offset: number = null;
@@ -487,10 +482,10 @@ export class NRF_DONGLE implements NRFInterface {
     assert(offset, "offset must be != null");
     assert(crc, "crc must be != null");
 
-    return [offset, crc];
+    return [crc, offset];
   }
 
-  // FIXME: Execute
+  // Execute
   async Execute() {
     // execute command
     let opEXECUTE: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.Execute]));
