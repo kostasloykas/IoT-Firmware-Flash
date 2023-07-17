@@ -9,6 +9,8 @@ import {
   assert,
   ZipFile,
 } from "./classes";
+import crc32 from "crc-32";
+import { Buffer } from "buffer";
 
 import { NRFInterface } from "./interfaces";
 
@@ -134,7 +136,6 @@ export class NRF_DONGLE implements NRFInterface {
     PRINT("Extracting files from zip");
     [image, init_packet] = await zip_file.ExtractFirmwareAndInitPacket();
     PRINT("Files extracted");
-
     this.port = port;
 
     // check if image is compatible with this device
@@ -170,8 +171,8 @@ export class NRF_DONGLE implements NRFInterface {
 
     UpdateProgressBar("20%");
 
-    return;
     //Transfer Init Packet
+    PRINT("Try to transfer Init Packet");
     await this.TransferInitPacket(init_packet)
       .then(() => {
         PRINT("Init Packet Transferred successfully");
@@ -236,13 +237,64 @@ export class NRF_DONGLE implements NRFInterface {
     return [max_size, offset, CRC32];
   }
 
+  // FIXME: CheckIfNeedsToTransferInitPacketIntoDevice
+  async CheckIfNeedsToTransferInitPacketIntoDevice(
+    remote_offset: number,
+    remote_crc: number,
+    init_packet: Uint8Array
+  ): Promise<boolean> {
+    // if there is no init packet or present init packet is too long.
+    if (remote_offset == 0 || remote_offset > init_packet.length) return true;
+
+    const expected_crc: number = crc32.buf(init_packet);
+
+    // if present init packet is invalid
+    if (expected_crc != remote_crc) return true;
+
+    // Send missing part
+    if (init_packet.length > remote_offset) return false;
+  }
+
+  // number to little-endian format
+  number_to_liitle_endian_format(num: number): number[] {
+    const value: Buffer = Buffer.alloc(4); // 4 bytes for unsigned long integer
+    value.writeUInt32LE(num, 0); // Write the size as a little-endian unsigned long integer
+
+    return Array.from(value);
+  }
+
   // FIXME: TransferInitPacket
   async TransferInitPacket(init_packet: Uint8Array) {
+    let remote_max_size: number = null;
+    let remote_offset: number = null;
+    let remote_CRC32: number = null;
+
     await this.Select()
       .then(([max_size, offset, CRC32]) => {
         PRINT("Max size", max_size, "Offset", offset, "CRC32", CRC32);
+        remote_max_size = max_size;
+        remote_offset = offset;
+        remote_CRC32 = CRC32;
       })
       .catch((err) => ERROR("TransferInitPacket", err));
+
+    if (init_packet.length > remote_max_size) ERROR("Init Packet is too long");
+
+    // FIXME:  check if the specific init packet is already in the device
+    // let needs_to_transfer_again_init_packet: boolean | void =
+    //   await this.CheckIfNeedsToTransferInitPacketIntoDevice(remote_offset, remote_CRC32, init_packet).catch(
+    //     (err) => ERROR("TransferInitPacket", err)
+    //   );
+
+    // if doesn't need to transfer again the init packet then return
+    // if (!needs_to_transfer_again_init_packet) return;
+
+    // Send Init Packet
+
+    // create command
+    await this.Create(init_packet.length).catch((err) => ERROR("TransferInitPacket", err));
+    // send data
+    // execute command
   }
 
   // GetResponse
@@ -288,8 +340,20 @@ export class NRF_DONGLE implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
-  Create(...params: any): void {
-    throw new Error("Method not implemented.");
+  // Create
+  async Create(size: number) {
+    // create command
+    let opCREATE: Uint8Array = Slip.encode(
+      new Uint8Array([OP_CODE.Create, 0x01, ...this.number_to_liitle_endian_format(size)])
+    );
+
+    // send command
+    await this.Write(opCREATE).catch((err) => {
+      ERROR("Create:", err);
+    });
+
+    // get response and check if the command executed successfully
+    await this.GetResponse(OP_CODE.Create).catch((err) => ERROR("Create", err));
   }
 
   // SetReceiptNotification
@@ -301,7 +365,7 @@ export class NRF_DONGLE implements NRFInterface {
 
     // send command
     await this.Write(opPRN).catch((err) => {
-      ERROR("SendPRN:", err);
+      ERROR("SetReceiptNotification:", err);
     });
 
     // get response and check if the command executed successfully

@@ -101,7 +101,7 @@ window.addEventListener("load", function () {
     let extention = path.split(".").pop();
     if (extention == "bin" || extention == "hex")
       image = new lib.FirmwareFile(input_element, "HTMLInputElement");
-    //FIXME: zip file upload
+    // zip file upload
     else if (extention == "zip") image = new lib.ZipFile(input_element);
     else lib.assert(0, "unrecognized extention");
 

@@ -62,4 +62,5 @@ export interface NRFInterface {
   GetResponse(...params: any): void;
   GetPacket(...params: any): void;
   TransferInitPacket(...params: any): void;
+  CheckIfNeedsToTransferInitPacketIntoDevice(...params: any): void;
 }
