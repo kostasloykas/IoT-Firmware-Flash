@@ -348,15 +348,15 @@ export class NRF_DONGLE implements NRFInterface {
 
     if (init_packet.length > remote_max_size) ERROR("Init Packet is too long");
 
-    // // check if the specific init packet is already in the device
-    // const needs_to_transfer_again_init_packet: boolean = this.CheckIfNeedsToTransferInitPacketIntoDevice(
-    //   remote_offset,
-    //   remote_CRC32,
-    //   init_packet
-    // );
+    // check if the specific init packet is already in the device
+    const needs_to_transfer_again_init_packet: boolean = this.CheckIfNeedsToTransferInitPacketIntoDevice(
+      remote_offset,
+      remote_CRC32,
+      init_packet
+    );
 
-    // // if doesn't need to transfer again the init packet then return
-    // if (!needs_to_transfer_again_init_packet) return;
+    // if doesn't need to transfer again the init packet then return
+    if (!needs_to_transfer_again_init_packet) return;
 
     // Send Init Packet
 
