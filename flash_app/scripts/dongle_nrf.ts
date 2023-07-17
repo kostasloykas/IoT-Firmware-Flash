@@ -11,7 +11,6 @@ import {
 } from "./classes";
 import crc32 from "crc-32";
 import { Buffer } from "buffer";
-
 import { NRFInterface } from "./interfaces";
 
 // operation code
@@ -249,40 +248,74 @@ export class NRF_DONGLE implements NRFInterface {
     });
 
     // get response and check if the command executed successfully
-    await this.GetResponse(OP_CODE.Write).catch((err) => ERROR("WriteCommand", err));
+    // CRC expected
+    await this.GetResponse(OP_CODE.CRC).catch((err) => ERROR("WriteCommand", err));
   }
 
   // FIXME: SendData
   async SendData(data: Uint8Array, crc = 0, offset = 0) {
+    const validate_crc = (crc1: number, crc2: number, offset1: number, offset2: number) => {
+      if (crc1 != crc2) ERROR("Failed CRC validation");
+      if (offset1 != offset2) ERROR("Failed offset validation");
+    };
+
     let current_prn = 0;
 
     // send data
     for (let start = offset; start < data.length; start += this.MTU) {
-      const to_transfer: Uint8Array = data.slice(start, this.MTU);
-      await this.WriteCommand(to_transfer);
+      const to_transfer: Uint8Array = data.slice(start, start + this.MTU);
+      // let kos = new Uint8Array(256);
+      // kos.fill(0);
+      // kos.set(to_transfer, 0);
+      DEBUG(to_transfer.length);
 
+      await this.WriteCommand(to_transfer).catch((err) => ERROR("SendData", err));
+
+      crc = crc32.buf(to_transfer, crc) & 0xffffffff;
       offset += to_transfer.length;
-      // increase prn
       current_prn++;
+      DEBUG(crc);
 
       // validate crc
       if (current_prn == this.PRN) {
+        let remote_offset: number, remote_crc: number;
+
         current_prn = 0;
-        // get checksum response
-        // validate crc
+        this.GetResponse(OP_CODE.CRC)
+          .then((response) => {
+            assert(response.length == 8, "Data must be 8 bytes");
+
+            const ExtractOffsetCRC = (data: Uint8Array): [offset: number, CRC32: number] => {
+              const dataView = new DataView(data.buffer);
+              const offset = dataView.getUint32(0, true);
+              const CRC = dataView.getUint32(4, true);
+              return [offset, CRC];
+            };
+
+            // extract data
+            [remote_offset, remote_crc] = ExtractOffsetCRC(response);
+          })
+          .catch((err) => ERROR("SendData", err));
+        validate_crc(crc, remote_crc, offset, remote_offset);
       }
     }
 
-    // get checksum response
-    // validate crc
+    // crc command
+    await this.CRC()
+      .then(([remote_crc, remote_offset]) => {
+        DEBUG(remote_crc, remote_offset);
+
+        validate_crc(crc, remote_crc, offset, remote_offset);
+      })
+      .catch((err) => ERROR("SendData", err));
   }
 
   // FIXME: CheckIfNeedsToTransferInitPacketIntoDevice
-  async CheckIfNeedsToTransferInitPacketIntoDevice(
+  CheckIfNeedsToTransferInitPacketIntoDevice(
     remote_offset: number,
     remote_crc: number,
     init_packet: Uint8Array
-  ): Promise<boolean> {
+  ): boolean {
     // if there is no init packet or present init packet is too long.
     if (remote_offset == 0 || remote_offset > init_packet.length) return true;
 
@@ -296,7 +329,7 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   // number to little-endian format
-  number_to_liitle_endian_format(num: number): number[] {
+  number_to_litle_endian_format(num: number): number[] {
     const value: Buffer = Buffer.alloc(4); // 4 bytes for unsigned long integer
     value.writeUInt32LE(num, 0); // Write the size as a little-endian unsigned long integer
 
@@ -320,14 +353,15 @@ export class NRF_DONGLE implements NRFInterface {
 
     if (init_packet.length > remote_max_size) ERROR("Init Packet is too long");
 
-    // check if the specific init packet is already in the device
-    let needs_to_transfer_again_init_packet: boolean | void =
-      await this.CheckIfNeedsToTransferInitPacketIntoDevice(remote_offset, remote_CRC32, init_packet).catch(
-        (err) => ERROR("TransferInitPacket", err)
-      );
+    // // check if the specific init packet is already in the device
+    // const needs_to_transfer_again_init_packet: boolean = this.CheckIfNeedsToTransferInitPacketIntoDevice(
+    //   remote_offset,
+    //   remote_CRC32,
+    //   init_packet
+    // );
 
-    // if doesn't need to transfer again the init packet then return
-    if (!needs_to_transfer_again_init_packet) return;
+    // // if doesn't need to transfer again the init packet then return
+    // if (!needs_to_transfer_again_init_packet) return;
 
     // Send Init Packet
 
@@ -388,7 +422,7 @@ export class NRF_DONGLE implements NRFInterface {
   async Create(size: number) {
     // create command
     let opCREATE: Uint8Array = Slip.encode(
-      new Uint8Array([OP_CODE.Create, 0x01, ...this.number_to_liitle_endian_format(size)])
+      new Uint8Array([OP_CODE.Create, 0x01, ...this.number_to_litle_endian_format(size)])
     );
 
     // send command
@@ -406,6 +440,7 @@ export class NRF_DONGLE implements NRFInterface {
   async SetReceiptNotification() {
     // prn command
     // validation every 256 sended packets
+    this.PRN = 256;
     let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x01, 0x00]));
 
     // send command
@@ -419,8 +454,40 @@ export class NRF_DONGLE implements NRFInterface {
     );
   }
 
-  CRC(...params: any): void {
-    throw new Error("Method not implemented.");
+  // FIXME: CRC
+  async CRC(): Promise<[crc: number, offset: number]> {
+    let crc: number = null,
+      offset: number = null;
+
+    // crc command
+    let opCRC: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.CRC]));
+
+    // send command
+    await this.Write(opCRC).catch((err) => {
+      ERROR("CRC", err);
+    });
+
+    // get response and check if the command executed successfully
+    await this.GetResponse(OP_CODE.CRC)
+      .then((data) => {
+        assert(data.length == 8, "Data must be 8 bytes");
+
+        const ExtractOffsetCRC = (data: Uint8Array): [offset: number, CRC32: number] => {
+          const dataView = new DataView(data.buffer);
+          const offset = dataView.getUint32(0, true);
+          const CRC = dataView.getUint32(4, true);
+          return [offset, CRC];
+        };
+
+        // extract data
+        [offset, crc] = ExtractOffsetCRC(data);
+      })
+      .catch((err) => ERROR("CRC", err));
+
+    assert(offset, "offset must be != null");
+    assert(crc, "crc must be != null");
+
+    return [offset, crc];
   }
 
   // FIXME: Execute
@@ -456,7 +523,7 @@ export class NRF_DONGLE implements NRFInterface {
           return mtu;
         };
 
-        mtu = (ConvertInLittleEndianFormat(data) - 1) / 2 - 1;
+        mtu = Math.floor(ConvertInLittleEndianFormat(data) - 1) / 2 - 1;
       })
       .catch((err) => ERROR("GetMTU", err));
 
