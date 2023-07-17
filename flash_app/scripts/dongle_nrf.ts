@@ -128,6 +128,7 @@ export class NRF_DONGLE implements NRFInterface {
   };
 
   MTU: number = null;
+  PRN: number = null;
 
   public async FlashFirmware(port: any, zip_file: ZipFile) {
     let init_packet: Uint8Array;
@@ -237,6 +238,45 @@ export class NRF_DONGLE implements NRFInterface {
     return [max_size, offset, CRC32];
   }
 
+  //FIXME: WriteCommand
+  async WriteCommand(data: Uint8Array) {
+    // write command
+    let opWRITE: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.Write, ...data]));
+
+    // send command
+    await this.Write(opWRITE).catch((err) => {
+      ERROR("WriteCommand:", err);
+    });
+
+    // get response and check if the command executed successfully
+    await this.GetResponse(OP_CODE.Write).catch((err) => ERROR("WriteCommand", err));
+  }
+
+  // FIXME: SendData
+  async SendData(data: Uint8Array, crc = 0, offset = 0) {
+    let current_prn = 0;
+
+    // send data
+    for (let start = offset; start < data.length; start += this.MTU) {
+      const to_transfer: Uint8Array = data.slice(start, this.MTU);
+      await this.WriteCommand(to_transfer);
+
+      offset += to_transfer.length;
+      // increase prn
+      current_prn++;
+
+      // validate crc
+      if (current_prn == this.PRN) {
+        current_prn = 0;
+        // get checksum response
+        // validate crc
+      }
+    }
+
+    // get checksum response
+    // validate crc
+  }
+
   // FIXME: CheckIfNeedsToTransferInitPacketIntoDevice
   async CheckIfNeedsToTransferInitPacketIntoDevice(
     remote_offset: number,
@@ -280,21 +320,25 @@ export class NRF_DONGLE implements NRFInterface {
 
     if (init_packet.length > remote_max_size) ERROR("Init Packet is too long");
 
-    // FIXME:  check if the specific init packet is already in the device
-    // let needs_to_transfer_again_init_packet: boolean | void =
-    //   await this.CheckIfNeedsToTransferInitPacketIntoDevice(remote_offset, remote_CRC32, init_packet).catch(
-    //     (err) => ERROR("TransferInitPacket", err)
-    //   );
+    // check if the specific init packet is already in the device
+    let needs_to_transfer_again_init_packet: boolean | void =
+      await this.CheckIfNeedsToTransferInitPacketIntoDevice(remote_offset, remote_CRC32, init_packet).catch(
+        (err) => ERROR("TransferInitPacket", err)
+      );
 
     // if doesn't need to transfer again the init packet then return
-    // if (!needs_to_transfer_again_init_packet) return;
+    if (!needs_to_transfer_again_init_packet) return;
 
     // Send Init Packet
 
     // create command
     await this.Create(init_packet.length).catch((err) => ERROR("TransferInitPacket", err));
+
     // send data
+    await this.SendData(init_packet).catch((err) => ERROR("TransferInitPacket", err));
+
     // execute command
+    await this.Execute().catch((err) => ERROR("TransferInitPacket", err));
   }
 
   // GetResponse
@@ -361,7 +405,8 @@ export class NRF_DONGLE implements NRFInterface {
   // value and obtain the maximum transmission unit (MTU)
   async SetReceiptNotification() {
     // prn command
-    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x00, 0x00])); // dont send validation
+    // validation every 256 sended packets
+    let opPRN: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.SetPacketReceiptNotification, 0x01, 0x00]));
 
     // send command
     await this.Write(opPRN).catch((err) => {
@@ -378,8 +423,18 @@ export class NRF_DONGLE implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
-  Execute(...params: any): void {
-    throw new Error("Method not implemented.");
+  // FIXME: Execute
+  async Execute() {
+    // execute command
+    let opEXECUTE: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.Execute]));
+
+    // send command
+    await this.Write(opEXECUTE).catch((err) => {
+      ERROR("Execute:", err);
+    });
+
+    // get response and check if the command executed successfully
+    await this.GetResponse(OP_CODE.Execute).catch((err) => ERROR("Execute", err));
   }
 
   // GetMTU
