@@ -125,7 +125,7 @@ export class NRF_DONGLE implements NRFInterface {
     parity: "none",
     flowControl: "none",
   };
-
+  needs_to_trigger_bootloader: boolean = false;
   MTU: number = null;
   PRN: number = null;
 
@@ -159,6 +159,13 @@ export class NRF_DONGLE implements NRFInterface {
     this.reader = this.port.readable.getReader({ mode: "byob" });
     this.writer = this.port.writable.getWriter();
 
+    if (this.needs_to_trigger_bootloader) {
+      PRINT("Try to trigger bootloader");
+      await this.TriggerBootloader()
+        .then(() => PRINT("Bootloader triggered"))
+        .catch((err) => ERROR("TriggerBootloader", err));
+    }
+
     PRINT("Try to get MTU");
     await this.GetMTU()
       .then((mtu) => {
@@ -182,14 +189,19 @@ export class NRF_DONGLE implements NRFInterface {
       })
       .catch((err) => ERROR("TransferInitPacket", err));
 
-    UpdateProgressBar("30%");
+    UpdateProgressBar("40%");
 
     //Transfer Firmware
+    PRINT("Try to transfer Firmware");
+    await this.TransferFirmware(image.FirmwareBytes)
+      .then(() => PRINT("Firmware transferred successfully"))
+      .catch((err) => ERROR("TransferFirmware", err));
+    UpdateProgressBar("90%");
 
     await this.ClosePort()
       .then(() => PRINT("Port closed successfully"))
       .catch((err) => ERROR("Port can't be closed ", err));
-    // UpdateProgressBar("100%");
+    UpdateProgressBar("100%");
   }
 
   async OpenPort() {
@@ -206,16 +218,44 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   // FIXME: TransferFirmware
-  async TransferFirmware() {}
+  async TransferFirmware(firmware: Uint8Array) {
+    let max_size: number = null;
+    let crc: number = null;
+
+    await this.Select(0x02)
+      .then(([remote_max_size, remote_offset, remote_CRC32]) => {
+        PRINT("Max size", remote_max_size, "Offset", remote_offset, "CRC32", remote_CRC32);
+        max_size = remote_max_size;
+        crc = remote_CRC32;
+      })
+      .catch((err) => ERROR("TransferFirmware", err));
+
+    assert(max_size != null, "max size must be != null");
+    assert(crc != null, "max size must be != null");
+
+    // Send Firmware
+    for (let offset = 0; offset < firmware.length; offset += max_size) {
+      // create command
+      let data: Uint8Array = firmware.slice(offset, offset + max_size);
+
+      await this.Create(data.length, 0x02).catch((err) => ERROR("TransferFirmware", err));
+
+      // send data
+      crc = (await this.SendData(data, crc, offset).catch((err) => ERROR("TransferFirmware", err))) as number;
+
+      // execute command
+      await this.Execute().catch((err) => ERROR("TransferFirmware", err));
+    }
+  }
 
   // Select
-  async Select(): Promise<[max_size: number, offset: number, CRC32: number]> {
+  async Select(type: number): Promise<[max_size: number, offset: number, CRC32: number]> {
     let max_size: number = null;
     let offset: number = null;
     let CRC32: number = null;
 
     // select command
-    let opSelect: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.Select, 0x01]));
+    let opSelect: Uint8Array = Slip.encode(new Uint8Array([OP_CODE.Select, type]));
 
     // send select command
     await this.Write(opSelect).catch((err) => {
@@ -261,7 +301,7 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   // SendData
-  async SendData(data: Uint8Array, crc = 0, offset = 0) {
+  async SendData(data: Uint8Array, crc = 0, offset = 0): Promise<number> {
     const validate_crc = (crc1: number, crc2: number, offset1: number, offset2: number) => {
       if (crc1 != crc2) ERROR("Failed CRC validation");
       if (offset1 != offset2) ERROR("Failed offset validation");
@@ -270,7 +310,7 @@ export class NRF_DONGLE implements NRFInterface {
     let current_prn: number = 0;
 
     // send data
-    for (let start = offset; start < data.length; start += this.MTU) {
+    for (let start = 0; start < data.length; start += this.MTU) {
       const to_transfer: Uint8Array = data.slice(start, start + this.MTU);
 
       await this.WriteCommand(to_transfer).catch((err) => ERROR("SendData", err));
@@ -310,9 +350,11 @@ export class NRF_DONGLE implements NRFInterface {
         validate_crc(crc, remote_crc, offset, remote_offset);
       })
       .catch((err) => ERROR("SendData", err));
+
+    return crc;
   }
 
-  // FIXME: CheckIfNeedsToTransferInitPacketIntoDevice
+  // TODO: CheckIfNeedsToTransferInitPacketIntoDevice
   CheckIfNeedsToTransferInitPacketIntoDevice(
     remote_offset: number,
     remote_crc: number,
@@ -344,7 +386,7 @@ export class NRF_DONGLE implements NRFInterface {
     let remote_offset: number = null;
     let remote_CRC32: number = null;
 
-    await this.Select()
+    await this.Select(0x01)
       .then(([max_size, offset, CRC32]) => {
         PRINT("Max size", max_size, "Offset", offset, "CRC32", CRC32);
         remote_max_size = max_size;
@@ -372,7 +414,7 @@ export class NRF_DONGLE implements NRFInterface {
     // Send Init Packet
 
     // create command
-    await this.Create(init_packet.length).catch((err) => ERROR("TransferInitPacket", err));
+    await this.Create(init_packet.length, 0x01).catch((err) => ERROR("TransferInitPacket", err));
 
     // send data
     await this.SendData(init_packet).catch((err) => ERROR("TransferInitPacket", err));
@@ -425,10 +467,10 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   // Create
-  async Create(size: number) {
+  async Create(size: number, type: number) {
     // create command
     let opCREATE: Uint8Array = Slip.encode(
-      new Uint8Array([OP_CODE.Create, 0x01, ...this.number_to_litle_endian_format(size)])
+      new Uint8Array([OP_CODE.Create, type, ...this.number_to_litle_endian_format(size)])
     );
 
     // send command
