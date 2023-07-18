@@ -129,6 +129,9 @@ export class NRF_DONGLE implements NRFInterface {
   MTU: number = null;
   PRN: number = null;
 
+  // FIXME: constructor
+  constructor() {}
+
   public async FlashFirmware(port: any, zip_file: ZipFile) {
     let init_packet: Uint8Array;
     let image: FirmwareFile;
@@ -196,6 +199,10 @@ export class NRF_DONGLE implements NRFInterface {
     await this.reader.releaseLock();
     await this.writer.releaseLock();
     await this.port.close();
+  }
+
+  async TriggerBootloader() {
+    throw new Error("Method not implemented.");
   }
 
   // FIXME: TransferFirmware
@@ -331,7 +338,7 @@ export class NRF_DONGLE implements NRFInterface {
     return Array.from(value);
   }
 
-  // FIXME: TransferInitPacket
+  // TransferInitPacket
   async TransferInitPacket(init_packet: Uint8Array) {
     let remote_max_size: number = null;
     let remote_offset: number = null;
@@ -348,15 +355,19 @@ export class NRF_DONGLE implements NRFInterface {
 
     if (init_packet.length > remote_max_size) ERROR("Init Packet is too long");
 
-    // check if the specific init packet is already in the device
-    const needs_to_transfer_again_init_packet: boolean = this.CheckIfNeedsToTransferInitPacketIntoDevice(
-      remote_offset,
-      remote_CRC32,
-      init_packet
-    );
+    // ============= NOT IMPLEMENTED =================
 
-    // if doesn't need to transfer again the init packet then return
-    if (!needs_to_transfer_again_init_packet) return;
+    // // check if the specific init packet is already in the device
+    // const needs_to_transfer_again_init_packet: boolean = this.CheckIfNeedsToTransferInitPacketIntoDevice(
+    //   remote_offset,
+    //   remote_CRC32,
+    //   init_packet
+    // );
+
+    // // if doesn't need to transfer again the init packet then return
+    // if (!needs_to_transfer_again_init_packet) return;
+
+    // ================================================
 
     // Send Init Packet
 
