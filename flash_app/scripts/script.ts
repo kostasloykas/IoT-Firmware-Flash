@@ -13,7 +13,8 @@ let image: lib.FirmwareFile | lib.ZipFile = null;
 
 export let SUPPORTED_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()], // zolertia
-  [new lib.Device(0x1915, 0x521f), new NRF_DONGLE()], // nrf52840 dongle bootloader
+  [new lib.Device(0x1915, 0x521f), new NRF_DONGLE(false)], // nrf52840 dongle bootloader
+  [new lib.Device(0x1915, 0x520f), new NRF_DONGLE(true)], // nrf52840 dongle bootloader if needs to trigger bootloader
   [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-b
   // TODO: [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-cc2538
   // [new lib.Device(0x1366, 0x1015), new NRF()], // nrf52840 DK
@@ -54,6 +55,11 @@ function CheckForSerialNavigator(): void {
     alert("Web Serial API is not available");
     lib.ERROR("Web Serial API is not available");
   }
+
+  if (!("usb" in navigator)) {
+    alert("Web USB API is not available");
+    lib.ERROR("Web USB API is not available");
+  }
 }
 
 function InstanceOf(device: lib.Device): any {
@@ -64,6 +70,17 @@ function InstanceOf(device: lib.Device): any {
     }
   });
   return instance;
+}
+
+function GetFilters(supported_devices: Map<lib.Device, any>): any[] {
+  let filters = [];
+
+  for (let device of supported_devices) {
+    const usbVendorId: number = device[0].vendor;
+    filters.push({ usbVendorId });
+  }
+
+  return filters;
 }
 
 // ====================== ON LOAD OF PAGE ==================
@@ -128,9 +145,10 @@ async function Main() {
   lib.UpdateProgressBar("0%");
 
   // Prompt user to select any serial port.
+  //
   let port: any = null;
   await navigator.serial
-    .requestPort()
+    .requestPort({ filters: GetFilters(SUPPORTED_DEVICES) })
     .then((port_: any) => {
       port = port_;
     })
@@ -140,9 +158,8 @@ async function Main() {
           to flash the firmware",
         "danger"
       );
-      lib.ERROR("Request port: ", error);
       ReleaseFlashButton();
-      return;
+      lib.ERROR("Request port: ", error);
     });
 
   lib.assert(port != null, "Port must be != null");

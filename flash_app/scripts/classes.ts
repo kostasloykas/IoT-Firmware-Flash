@@ -9,6 +9,7 @@ import { Buffer } from "buffer";
 declare global {
   interface Navigator {
     serial: any;
+    usb: any;
   }
 }
 

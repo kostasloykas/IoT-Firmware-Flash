@@ -125,16 +125,29 @@ export class NRF_DONGLE implements NRFInterface {
     parity: "none",
     flowControl: "none",
   };
-  needs_to_trigger_bootloader: boolean = false;
+  needs_to_trigger_bootloader: boolean = null;
   MTU: number = null;
   PRN: number = null;
 
-  // FIXME: constructor
-  constructor() {}
+  constructor(trigger_bootloader: boolean) {
+    this.needs_to_trigger_bootloader = trigger_bootloader;
+  }
 
   public async FlashFirmware(port: any, zip_file: ZipFile) {
     let init_packet: Uint8Array;
     let image: FirmwareFile;
+
+    // trigger bootloader if needs
+    if (this.needs_to_trigger_bootloader) {
+      DEBUG(port);
+      PRINT("Try to Trigger Bootloader");
+      await this.TriggerBootloader()
+        .then((result) => {
+          PRINT("Bootloader Triggered");
+        })
+        .catch((err) => ERROR("TriggerBootloader", err));
+    }
+    return;
 
     PRINT("Extracting files from zip");
     [image, init_packet] = await zip_file.ExtractFirmwareAndInitPacket();
@@ -214,10 +227,28 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   async TriggerBootloader() {
-    throw new Error("Method not implemented.");
+    const filters: any = [
+      // { vendorId: 0x1209, productId: 0xa800 },
+      // { vendorId: 0x1209, productId: 0xa850 },
+    ];
+    // navigator.usb
+    //   .requestDevice({ filters })
+    //   .then((usbDevice: any) => {
+    //     console.log(`Product name: ${usbDevice.productName}`);
+    //   })
+    //   .catch((e: any) => {
+    //     console.error(`There is no device. ${e}`);
+    //   });
+
+    // navigator.usb.getDevices().then((devices: any) => {
+    //   console.log(`Total devices: ${devices.length}`);
+    //   devices.forEach((device: any) => {
+    //     console.log(`Product name: ${device.productName}, serial number ${device.serialNumber}`);
+    //   });
+    // });
   }
 
-  // FIXME: TransferFirmware
+  // TransferFirmware
   async TransferFirmware(firmware: Uint8Array) {
     let max_size: number = null;
     let crc: number = null;
