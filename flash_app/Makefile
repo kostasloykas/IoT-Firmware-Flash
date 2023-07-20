@@ -9,12 +9,13 @@ install:
 	@echo "Install Dependencies";
 
 
+#github push 
 push: .gitignore
 	@git add . ;
 	@git commit -m "update app";
 	@git push;
 
-
-gitlab_push: .gitignore
+#gitlab push 
+gitlab_push: push .gitignore
 	@git push gitlab main;
 
