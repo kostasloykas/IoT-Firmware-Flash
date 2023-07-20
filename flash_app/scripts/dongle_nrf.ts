@@ -115,9 +115,9 @@ class Slip {
 }
 
 export class NRF_DONGLE implements NRFInterface {
-  port: any;
-  writer: any;
-  reader: any;
+  port: any = null;
+  writer: any = null;
+  reader: any = null;
   filters: object = {
     dataBits: 8,
     baudRate: 115200, // 115200
