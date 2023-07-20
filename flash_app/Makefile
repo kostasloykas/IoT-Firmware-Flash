@@ -14,3 +14,7 @@ push: .gitignore
 	@git commit -m "update app";
 	@git push;
 
+
+gitlab_push: .gitignore
+	@git push gitlab main;
+
