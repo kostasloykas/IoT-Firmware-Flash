@@ -16,6 +16,6 @@ push: .gitignore
 	@git push;
 
 #gitlab push 
-gitlab_push: push .gitignore
+gitlab_push: .gitignore
 	@git push gitlab main;
 
