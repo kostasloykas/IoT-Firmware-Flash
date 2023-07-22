@@ -43,6 +43,9 @@ export interface NRFInterface {
   writer: any;
   reader: any;
   filters: any;
+  MTU: number;
+  PRN: number;
+  DFU_DETACH: number;
 
   OpenPort(...params: any): void;
   ClosePort(...params: any): void;

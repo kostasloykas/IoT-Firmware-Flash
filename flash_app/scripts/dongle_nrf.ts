@@ -12,6 +12,7 @@ import {
 import crc32 from "crc-32";
 import { Buffer } from "buffer";
 import { NRFInterface } from "./interfaces";
+import { resolve } from "path";
 
 // operation code
 enum OP_CODE {
@@ -125,9 +126,10 @@ export class NRF_DONGLE implements NRFInterface {
     parity: "none",
     flowControl: "none",
   };
-  needs_to_trigger_bootloader: boolean = null;
   MTU: number = null;
   PRN: number = null;
+  needs_to_trigger_bootloader: boolean = null;
+  DFU_DETACH: number = 0x00;
 
   constructor(trigger_bootloader: boolean) {
     this.needs_to_trigger_bootloader = trigger_bootloader;
@@ -136,18 +138,6 @@ export class NRF_DONGLE implements NRFInterface {
   public async FlashFirmware(port: any, zip_file: ZipFile) {
     let init_packet: Uint8Array;
     let image: FirmwareFile;
-
-    // trigger bootloader if needs
-    if (this.needs_to_trigger_bootloader) {
-      DEBUG(port);
-      PRINT("Try to Trigger Bootloader");
-      await this.TriggerBootloader()
-        .then((result) => {
-          PRINT("Bootloader Triggered");
-        })
-        .catch((err) => ERROR("TriggerBootloader", err));
-    }
-    return;
 
     PRINT("Extracting files from zip");
     [image, init_packet] = await zip_file.ExtractFirmwareAndInitPacket();
@@ -172,12 +162,17 @@ export class NRF_DONGLE implements NRFInterface {
     this.reader = this.port.readable.getReader({ mode: "byob" });
     this.writer = this.port.writable.getWriter();
 
+    // trigger bootloader if needs
     if (this.needs_to_trigger_bootloader) {
-      PRINT("Try to trigger bootloader");
+      PRINT("Try to Trigger Bootloader");
       await this.TriggerBootloader()
-        .then(() => PRINT("Bootloader triggered"))
+        .then((result) => {
+          PRINT("Bootloader Triggered");
+        })
         .catch((err) => ERROR("TriggerBootloader", err));
     }
+
+    return;
 
     PRINT("Try to get MTU");
     await this.GetMTU()
@@ -227,10 +222,17 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   async TriggerBootloader() {
-    const filters: any = [
-      // { vendorId: 0x1209, productId: 0xa800 },
-      // { vendorId: 0x1209, productId: 0xa850 },
-    ];
+    await this.Write(new Uint8Array([this.DFU_DETACH]));
+    DEBUG("ellaa1");
+    await new Promise((resolve, reject) => {
+      setTimeout(resolve, 1000);
+    });
+    DEBUG("ellaa2");
+
+    // const filters: any = [
+    // { vendorId: 0x1209, productId: 0xa800 },
+    // { vendorId: 0x1209, productId: 0xa850 },
+    // ];
     // navigator.usb
     //   .requestDevice({ filters })
     //   .then((usbDevice: any) => {
@@ -239,7 +241,6 @@ export class NRF_DONGLE implements NRFInterface {
     //   .catch((e: any) => {
     //     console.error(`There is no device. ${e}`);
     //   });
-
     // navigator.usb.getDevices().then((devices: any) => {
     //   console.log(`Total devices: ${devices.length}`);
     //   devices.forEach((device: any) => {
