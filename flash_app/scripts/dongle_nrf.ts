@@ -12,7 +12,7 @@ import {
 import crc32 from "crc-32";
 import { Buffer } from "buffer";
 import { NRFInterface } from "./interfaces";
-import { resolve } from "path";
+import * as usb from "./web_usb";
 
 // operation code
 enum OP_CODE {
@@ -172,6 +172,7 @@ export class NRF_DONGLE implements NRFInterface {
         .catch((err) => ERROR("TriggerBootloader", err));
     }
 
+    DEBUG(port);
     return;
 
     PRINT("Try to get MTU");
@@ -222,31 +223,18 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   async TriggerBootloader() {
-    await this.Write(new Uint8Array([this.DFU_DETACH]));
-    DEBUG("ellaa1");
-    await new Promise((resolve, reject) => {
-      setTimeout(resolve, 1000);
-    });
-    DEBUG("ellaa2");
+    const filters: any = [{ vendorId: 0x1915, productId: 0x520f }];
+    let device: any = null;
 
-    // const filters: any = [
-    // { vendorId: 0x1209, productId: 0xa800 },
-    // { vendorId: 0x1209, productId: 0xa850 },
-    // ];
-    // navigator.usb
-    //   .requestDevice({ filters })
-    //   .then((usbDevice: any) => {
-    //     console.log(`Product name: ${usbDevice.productName}`);
-    //   })
-    //   .catch((e: any) => {
-    //     console.error(`There is no device. ${e}`);
-    //   });
-    // navigator.usb.getDevices().then((devices: any) => {
-    //   console.log(`Total devices: ${devices.length}`);
-    //   devices.forEach((device: any) => {
-    //     console.log(`Product name: ${device.productName}, serial number ${device.serialNumber}`);
-    //   });
-    // });
+    // request usb device
+    await usb
+      .RequestDevice(filters)
+      .then((usbDevice) => (device = usbDevice))
+      .catch((err) => {
+        ERROR("TriggerBootloader", err);
+      });
+
+    assert(device != null, "Device must be != null");
   }
 
   // TransferFirmware
