@@ -70,4 +70,5 @@ export interface NRFInterface {
   CheckIfNeedsToTransferInitPacketIntoDevice(...params: any): void;
   SendData(...params: any): void;
   WriteCommand(...params: any): void;
+  GetDfuInterfaceNumber(...params: any): void;
 }

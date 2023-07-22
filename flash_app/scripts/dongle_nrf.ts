@@ -172,7 +172,6 @@ export class NRF_DONGLE implements NRFInterface {
         .catch((err) => ERROR("TriggerBootloader", err));
     }
 
-    DEBUG(port);
     return;
 
     PRINT("Try to get MTU");
@@ -222,6 +221,10 @@ export class NRF_DONGLE implements NRFInterface {
     await this.port.close();
   }
 
+  GetDfuInterfaceNumber(device: any): number {
+    return 1;
+  }
+
   async TriggerBootloader() {
     const filters: any = [{ vendorId: 0x1915, productId: 0x520f }];
     let device: any = null;
@@ -235,6 +238,11 @@ export class NRF_DONGLE implements NRFInterface {
       });
 
     assert(device != null, "Device must be != null");
+
+    // open port
+    await device.open();
+    DEBUG(device.configuration);
+    await device.close();
   }
 
   // TransferFirmware
