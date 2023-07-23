@@ -129,7 +129,8 @@ export class NRF_DONGLE implements NRFInterface {
   MTU: number = null;
   PRN: number = null;
   needs_to_trigger_bootloader: boolean = null;
-  DFU_DETACH: number = 0x00;
+  DFU_DETACH_REQUEST: number = 0x00;
+  ReqTypeOUT: number = 0x21;
 
   constructor(trigger_bootloader: boolean) {
     this.needs_to_trigger_bootloader = trigger_bootloader;
@@ -147,6 +148,16 @@ export class NRF_DONGLE implements NRFInterface {
     // check if image is compatible with this device
     CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
 
+    // trigger bootloader if needs
+    if (this.needs_to_trigger_bootloader) {
+      PRINT("Try to Trigger Bootloader");
+      await this.TriggerBootloader()
+        .then((result) => {
+          PRINT("Bootloader Triggered");
+        })
+        .catch((err) => ERROR("TriggerBootloader", err));
+    }
+
     // Open port
     PRINT("Try to open the port");
     await this.OpenPort()
@@ -161,18 +172,6 @@ export class NRF_DONGLE implements NRFInterface {
     //  initialize buffers
     this.reader = this.port.readable.getReader({ mode: "byob" });
     this.writer = this.port.writable.getWriter();
-
-    // trigger bootloader if needs
-    if (this.needs_to_trigger_bootloader) {
-      PRINT("Try to Trigger Bootloader");
-      await this.TriggerBootloader()
-        .then((result) => {
-          PRINT("Bootloader Triggered");
-        })
-        .catch((err) => ERROR("TriggerBootloader", err));
-    }
-
-    return;
 
     PRINT("Try to get MTU");
     await this.GetMTU()
@@ -221,13 +220,27 @@ export class NRF_DONGLE implements NRFInterface {
     await this.port.close();
   }
 
-  GetDfuInterfaceNumber(device: any): number {
-    return 1;
+  async GetDfuInterfaceNumber(device: any): Promise<number> {
+    const interfaces = device.configuration.interfaces;
+
+    if (device.configuration == null) return null;
+
+    for (let interface_iter of interfaces) {
+      if (
+        interface_iter.alternate.interfaceClass == 255 &&
+        interface_iter.alternate.interfaceSubclass == 1 &&
+        interface_iter.alternate.interfaceProtocol == 1
+      )
+        return interface_iter.interfaceNumber;
+    }
+
+    return null;
   }
 
   async TriggerBootloader() {
     const filters: any = [{ vendorId: 0x1915, productId: 0x520f }];
     let device: any = null;
+    let interface_number: number = null;
 
     // request usb device
     await usb
@@ -241,8 +254,39 @@ export class NRF_DONGLE implements NRFInterface {
 
     // open port
     await device.open();
-    DEBUG(device.configuration);
-    await device.close();
+
+    // get dfu interface number
+    await this.GetDfuInterfaceNumber(device)
+      .then((interface_num) => {
+        if (interface_num == null) ERROR("Can't find DFU interface");
+        interface_number = interface_num;
+      })
+      .catch((err) => ERROR("TriggerBootloader", err));
+
+    assert(interface_number != null, "Interface number must be != null");
+
+    // claim dfu interface
+    await device.claimInterface(interface_number).catch((err: any) => ERROR("TriggerBootloader", err));
+
+    const arr: Uint8Array = new TextEncoder().encode("0");
+
+    // send request to trigger bootloader
+    const setup = {
+      requestType: "class",
+      recipient: "interface",
+      request: this.DFU_DETACH_REQUEST,
+      value: 0,
+      index: interface_number,
+    };
+
+    const result = await device
+      .controlTransferOut(setup, arr)
+      .catch((err: any) => ERROR("TriggerBootloader", err));
+
+    await device.releaseInterface(interface_number);
+
+    // close port
+    // await device.close();
   }
 
   // TransferFirmware

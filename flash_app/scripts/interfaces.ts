@@ -45,7 +45,8 @@ export interface NRFInterface {
   filters: any;
   MTU: number;
   PRN: number;
-  DFU_DETACH: number;
+  DFU_DETACH_REQUEST: number;
+  ReqTypeOUT: number;
 
   OpenPort(...params: any): void;
   ClosePort(...params: any): void;
