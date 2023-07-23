@@ -270,7 +270,6 @@ export class NRF_DONGLE implements NRFInterface {
 
     const arr: Uint8Array = new TextEncoder().encode("0");
 
-    // send request to trigger bootloader
     const setup = {
       requestType: "class",
       recipient: "interface",
@@ -279,14 +278,14 @@ export class NRF_DONGLE implements NRFInterface {
       index: interface_number,
     };
 
-    const result = await device
-      .controlTransferOut(setup, arr)
-      .catch((err: any) => ERROR("TriggerBootloader", err));
+    // send request to trigger bootloader
+    await device.controlTransferOut(setup, arr).catch((err: any) => ERROR("TriggerBootloader", err));
 
+    // release interface
     await device.releaseInterface(interface_number);
 
     // close port
-    // await device.close();
+    await device.close();
   }
 
   // TransferFirmware
