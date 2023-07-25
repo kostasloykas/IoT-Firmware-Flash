@@ -130,7 +130,6 @@ export class NRF_DONGLE implements NRFInterface {
   PRN: number = null;
   needs_to_trigger_bootloader: boolean = null;
   DFU_DETACH_REQUEST: number = 0x00;
-  ReqTypeOUT: number = 0x21;
 
   constructor(trigger_bootloader: boolean) {
     this.needs_to_trigger_bootloader = trigger_bootloader;
@@ -143,6 +142,7 @@ export class NRF_DONGLE implements NRFInterface {
     PRINT("Extracting files from zip");
     [image, init_packet] = await zip_file.ExtractFirmwareAndInitPacket();
     PRINT("Files extracted");
+
     this.port = port;
 
     // check if image is compatible with this device
@@ -156,6 +156,12 @@ export class NRF_DONGLE implements NRFInterface {
           PRINT("Bootloader Triggered");
         })
         .catch((err) => ERROR("TriggerBootloader", err));
+
+      let usbVendorId = 0x1915;
+      let usbProductId = 0x521f;
+      await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then((port_: any) => {
+        this.port = port_;
+      });
     }
 
     // Open port
