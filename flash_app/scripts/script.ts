@@ -90,9 +90,9 @@ function GetFiltersForUsb(supported_devices: Map<lib.Device, any>): any[] {
   let filters = [];
 
   for (let device of supported_devices) {
-    const usbVendorId: number = device[0].vendor;
-    const usbProductId: number = device[0].product;
-    filters.push({ usbVendorId, usbProductId });
+    const vendorId: number = device[0].vendor;
+    const productId: number = device[0].product;
+    filters.push({ vendorId, productId });
   }
 
   return filters;
