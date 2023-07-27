@@ -157,6 +157,7 @@ export class NRF_DONGLE implements NRFInterface {
         })
         .catch((err) => ERROR("TriggerBootloader", err));
 
+      // FIXME: serial request port
       let usbVendorId = 0x1915;
       let usbProductId = 0x521f;
       await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then((port_: any) => {
@@ -431,24 +432,6 @@ export class NRF_DONGLE implements NRFInterface {
     return crc;
   }
 
-  // TODO: CheckIfNeedsToTransferInitPacketIntoDevice
-  CheckIfNeedsToTransferInitPacketIntoDevice(
-    remote_offset: number,
-    remote_crc: number,
-    init_packet: Uint8Array
-  ): boolean {
-    // if there is no init packet or present init packet is too long.
-    if (remote_offset == 0 || remote_offset > init_packet.length) return true;
-
-    const expected_crc: number = crc32.buf(init_packet);
-
-    // if present init packet is invalid
-    if (expected_crc != remote_crc) return true;
-
-    // Send missing part
-    if (init_packet.length > remote_offset) return false;
-  }
-
   // number to little-endian format
   number_to_litle_endian_format(num: number): number[] {
     const value: Buffer = Buffer.alloc(4); // 4 bytes for unsigned long integer
@@ -673,6 +656,7 @@ export class NRF_DONGLE implements NRFInterface {
     throw new Error("Method not implemented.");
   }
 
+  // FIXME: CheckIfImageFitsInFlashMemory
   CheckIfImageFitsInFlashMemory(...params: any): void {
     throw new Error("Method not implemented.");
   }
