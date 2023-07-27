@@ -13,7 +13,6 @@ import crc32 from "crc-32";
 import { Buffer } from "buffer";
 import { NRF_DONGLE_Interface } from "./interfaces";
 import * as usb from "./web_usb";
-import { resolve } from "path";
 
 // operation code
 enum OP_CODE {

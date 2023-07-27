@@ -4,7 +4,7 @@ import * as lib from "./classes";
 import { CC2538 } from "./cc2538";
 import { NRF_DONGLE } from "./dongle_nrf52840";
 import { NRF_DK } from "./DK_nrf52840";
-import { RequestDevice } from "./web_usb";
+import * as usb from "./web_usb";
 
 // ==================== VARIABLES =========================
 
@@ -125,7 +125,9 @@ async function FindPort(): Promise<[any, string]> {
 
   // Try to find usb devices
   if (didnt_found_port) {
-    await RequestDevice({ filters: GetFiltersForUsb(SUPPORTED_USB_DEVICES) })
+    lib.DEBUG("asdjhks");
+    await usb
+      .RequestDevice(GetFiltersForUsb(SUPPORTED_USB_DEVICES))
       .then((port_: any) => {
         port = port_;
         didnt_found_port = false;
