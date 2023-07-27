@@ -165,7 +165,6 @@ export class NRF_DONGLE implements NRFInterface {
       });
     }
 
-    return;
     // Open port
     PRINT("Try to open the port");
     await this.OpenPort()
