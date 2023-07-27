@@ -165,6 +165,7 @@ export class NRF_DONGLE implements NRFInterface {
       });
     }
 
+    return;
     // Open port
     PRINT("Try to open the port");
     await this.OpenPort()
@@ -653,11 +654,6 @@ export class NRF_DONGLE implements NRFInterface {
   }
 
   Abort(...params: any): void {
-    throw new Error("Method not implemented.");
-  }
-
-  // FIXME: CheckIfImageFitsInFlashMemory
-  CheckIfImageFitsInFlashMemory(...params: any): void {
     throw new Error("Method not implemented.");
   }
 

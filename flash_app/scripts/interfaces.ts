@@ -62,7 +62,6 @@ export interface NRFInterface {
   GetHWVersion(...params: any): void;
   GetFWVersion(...params: any): void;
   Abort(...params: any): void;
-  CheckIfImageFitsInFlashMemory(...params: any): void;
   GetResponse(...params: any): void;
   GetPacket(...params: any): void;
   TransferInitPacket(...params: any): void;
