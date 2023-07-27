@@ -4,6 +4,7 @@ import * as lib from "./classes";
 import { CC2538 } from "./cc2538";
 import { NRF_DONGLE } from "./dongle_nrf52840";
 import { NRF_DK } from "./DK_nrf52840";
+import { RequestDevice } from "./web_usb";
 
 // ==================== VARIABLES =========================
 
@@ -16,8 +17,11 @@ let SUPPORTED_SERIAL_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x1915, 0x521f), new NRF_DONGLE(false)], // nrf52840 dongle bootloader
   [new lib.Device(0x1915, 0x520f), new NRF_DONGLE(true)], // nrf52840 dongle bootloader if needs to trigger bootloader
   [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-b
-  [new lib.Device(0x1366, 0x1015), new NRF_DK()], // nrf52840 DK
   // [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-cc2538
+]);
+
+let SUPPORTED_USB_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
+  [new lib.Device(0x1366, 0x1015), new NRF_DK()], // nrf52840 DK
 ]);
 
 // ====================== FUNCTIONS ==================
@@ -70,7 +74,7 @@ function InstanceOf(device: lib.Device): any {
   return instance;
 }
 
-function GetFilters(supported_devices: Map<lib.Device, any>): any[] {
+function GetFiltersForSerial(supported_devices: Map<lib.Device, any>): any[] {
   let filters = [];
 
   for (let device of supported_devices) {
@@ -80,6 +84,65 @@ function GetFilters(supported_devices: Map<lib.Device, any>): any[] {
   }
 
   return filters;
+}
+
+function GetFiltersForUsb(supported_devices: Map<lib.Device, any>): any[] {
+  let filters = [];
+
+  for (let device of supported_devices) {
+    const usbVendorId: number = device[0].vendor;
+    const usbProductId: number = device[0].product;
+    filters.push({ usbVendorId, usbProductId });
+  }
+
+  return filters;
+}
+
+function GetVendorAndProductId(port: any, api_used: string): [number, number] {
+  if (api_used == "serial") {
+    return [port.getInfo().usbVendorId, port.getInfo().usbProductId];
+  } else if (api_used == "usb") {
+    return [port.vendorId, port.productId];
+  } else {
+    lib.assert(0, "GetVendorAndProductId");
+  }
+}
+
+// Find port with
+async function FindPort(): Promise<[any, string]> {
+  let port: any = null;
+  let didnt_found_port: boolean = true;
+  let api_used: string = null;
+
+  await navigator.serial
+    .requestPort({ filters: GetFiltersForSerial(SUPPORTED_SERIAL_DEVICES) })
+    .then((port_: any) => {
+      port = port_;
+      didnt_found_port = false;
+      api_used = "serial";
+    })
+    .catch((error: any) => {});
+
+  // Try to find usb devices
+  if (didnt_found_port) {
+    await RequestDevice({ filters: GetFiltersForUsb(SUPPORTED_USB_DEVICES) })
+      .then((port_: any) => {
+        port = port_;
+        didnt_found_port = false;
+        api_used = "usb";
+      })
+      .catch((err) => {});
+  }
+
+  if (didnt_found_port) {
+    Alert("Didn't detect any device", "danger");
+
+    ReleaseFlashButton();
+
+    lib.ERROR("Didn't detect any device");
+  }
+
+  return [port, api_used];
 }
 
 // ====================== ON LOAD OF PAGE ==================
@@ -143,29 +206,16 @@ async function Main() {
 
   lib.UpdateProgressBar("0%");
 
-  // Prompt user to select any serial port.
-  let port: any = null;
-  await navigator.serial
-    .requestPort({ filters: GetFilters(SUPPORTED_SERIAL_DEVICES) })
-    .then((port_: any) => {
-      port = port_;
-    })
-    .catch((error: any) => {
-      Alert(
-        "Please select the port in order \
-          to flash the firmware",
-        "danger"
-      );
-      ReleaseFlashButton();
-      lib.ERROR("Request port: ", error);
-    });
+  // Try to find devices
+  let [port, api_used]: any = await FindPort().catch((err) => {
+    lib.ERROR("FindPort", err);
+  });
 
   lib.assert(port != null, "Port must be != null");
 
   // check the vendor id and product id of device
   // must be inside the supported vendors and products id
-  const product_id: number = port.getInfo().usbProductId;
-  const vendor_id: number = port.getInfo().usbVendorId;
+  const [vendor_id, product_id] = GetVendorAndProductId(port, api_used);
 
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));

@@ -9,6 +9,8 @@ export class NRF_DK implements NRF_DK_Interface {
 
   public async FlashFirmware(port: any, image: FirmwareFile) {
     // open port
+    this.port = port;
+
     PRINT("Try to open port");
     await this.OpenPort()
       .then(() => PRINT("Port opened successfully"))
@@ -27,15 +29,22 @@ export class NRF_DK implements NRF_DK_Interface {
       .catch((err) => ERROR("ClosePort", err));
   }
 
+  // FIXME: OpenPort
   async OpenPort() {
     throw new Error("Method not implemented.");
   }
+
+  // FIXME: ClosePort
   async ClosePort() {
     throw new Error("Method not implemented.");
   }
+
+  // FIXME: BulkTransfer
   async BulkTransfer() {
     throw new Error("Method not implemented.");
   }
+
+  // FIXME: Reset
   async Reset(...params: any) {
     throw new Error("Method not implemented.");
   }

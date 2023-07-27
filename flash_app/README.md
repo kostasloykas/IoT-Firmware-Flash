@@ -11,7 +11,9 @@ Prerequirements for Linux:
    Replace at the end of file
    exec -a "$0" "$HERE/chrome" "$@"
    with
-   exec -a "$0" "$HERE/chrome" "$@"--user-data-dir --test-type --no-sandbox
+   exec -a "$0" "$HERE/chrome" "$@" --user-data-dir --test-type --no-sandbox
+
+   or run command $google-chrome --user-data-dir --test-type --no-sandbox
 
 Prerequirements for Windows:
 
