@@ -38,7 +38,7 @@ export interface Command {
   CheckIfImageFitsInFlashMemory(...params: any): void;
 }
 
-export interface NRFInterface {
+export interface NRF_DONGLE_Interface {
   port: any;
   writer: any;
   reader: any;
@@ -69,4 +69,16 @@ export interface NRFInterface {
   SendData(...params: any): void;
   WriteCommand(...params: any): void;
   GetDfuInterfaceNumber(...params: any): void;
+}
+
+export interface NRF_DK_Interface {
+  port: any;
+  writer: any;
+  reader: any;
+  filters: any;
+
+  OpenPort(...params: any): void;
+  ClosePort(...params: any): void;
+  BulkTransfer(...params: any): void;
+  Reset(...params: any): void;
 }

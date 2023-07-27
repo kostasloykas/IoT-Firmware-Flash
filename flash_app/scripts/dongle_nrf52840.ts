@@ -11,7 +11,7 @@ import {
 } from "./classes";
 import crc32 from "crc-32";
 import { Buffer } from "buffer";
-import { NRFInterface } from "./interfaces";
+import { NRF_DONGLE_Interface } from "./interfaces";
 import * as usb from "./web_usb";
 
 // operation code
@@ -115,7 +115,7 @@ class Slip {
   }
 }
 
-export class NRF_DONGLE implements NRFInterface {
+export class NRF_DONGLE implements NRF_DONGLE_Interface {
   port: any = null;
   writer: any = null;
   reader: any = null;
@@ -157,9 +157,8 @@ export class NRF_DONGLE implements NRFInterface {
         })
         .catch((err) => ERROR("TriggerBootloader", err));
 
-      // FIXME: serial request port
-      let usbVendorId = 0x1915;
-      let usbProductId = 0x521f;
+      const usbVendorId: number = 0x1915;
+      const usbProductId: number = 0x521f;
       await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then((port_: any) => {
         this.port = port_;
       });

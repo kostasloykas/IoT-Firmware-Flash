@@ -3,6 +3,7 @@ import $ from "jquery";
 import * as lib from "./classes";
 import { CC2538 } from "./cc2538";
 import { NRF_DONGLE } from "./dongle_nrf52840";
+import { NRF_DK } from "./DK_nrf52840";
 
 // ==================== VARIABLES =========================
 
@@ -15,7 +16,7 @@ let SUPPORTED_SERIAL_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x1915, 0x521f), new NRF_DONGLE(false)], // nrf52840 dongle bootloader
   [new lib.Device(0x1915, 0x520f), new NRF_DONGLE(true)], // nrf52840 dongle bootloader if needs to trigger bootloader
   [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-b
-  [new lib.Device(0x1366, 0x1015), new NRF_DONGLE(true)], // nrf52840 DK
+  [new lib.Device(0x1366, 0x1015), new NRF_DK()], // nrf52840 DK
   // [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-cc2538
 ]);
 
