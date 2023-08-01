@@ -273,9 +273,8 @@ function KeepCursorAtEnd(textarea: any) {
 }
 
 export function PRINT(...anything: any): void {
-  console.log(anything);
-
   // print in console frame
+
   $("#console_div").append(anything + "\n");
   KeepCursorAtEnd($("#console_div")[0]);
 }

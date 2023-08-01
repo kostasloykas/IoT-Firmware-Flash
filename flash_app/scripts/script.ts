@@ -5,6 +5,7 @@ import { CC2538 } from "./cc2538";
 import { NRF_DONGLE } from "./dongle_nrf52840";
 import { NRF_DK } from "./DK_nrf52840";
 import * as usb from "./web_usb";
+import { NOTFOUND } from "dns";
 
 // ==================== VARIABLES =========================
 
@@ -41,14 +42,24 @@ function Alert(message: string, type_of_alert: string, duration: number = 4000) 
   }, duration);
 }
 
+function ClearConsole() {
+  $("#console_div").html("");
+}
+
 // update page
-function UpdatePage() {
-  ReleaseFlashButton();
+function UpdatePage(release_flash_button: boolean = true, clear_console: boolean = true) {
+  if (release_flash_button) ReleaseFlashButton();
+  if (clear_console) ClearConsole();
 }
 
 function ReleaseFlashButton(): void {
   let flash_button = $("#flash_but");
   flash_button.prop("disabled", false);
+}
+
+function DisableFlashButton(): void {
+  let flash_button = $("#flash_but");
+  flash_button.prop("disabled", true);
 }
 
 function CheckForSerialNavigator(): void {
@@ -66,7 +77,15 @@ function CheckForSerialNavigator(): void {
 
 function InstanceOf(device: lib.Device): any {
   let instance = null;
+  // check for serial devices
   SUPPORTED_SERIAL_DEVICES.forEach((value, key) => {
+    if (key.equals(device)) {
+      instance = value;
+    }
+  });
+
+  // check for web usb devices
+  SUPPORTED_USB_DEVICES.forEach((value, key) => {
     if (key.equals(device)) {
       instance = value;
     }
@@ -121,11 +140,15 @@ async function FindPort(): Promise<[any, string]> {
       didnt_found_port = false;
       api_used = "serial";
     })
-    .catch((error: any) => {});
+    .catch((error: any) => {
+      if (error.name == "NotFoundError") {
+        lib.PRINT("Can't use this device with Web Serial API");
+        lib.PRINT("Lets try Web USB API");
+      }
+    });
 
   // Try to find usb devices
   if (didnt_found_port) {
-    lib.DEBUG("asdjhks");
     await usb
       .RequestDevice(GetFiltersForUsb(SUPPORTED_USB_DEVICES))
       .then((port_: any) => {
@@ -162,7 +185,6 @@ window.addEventListener("load", function () {
       return;
     }
 
-    flash_button.prop("disabled", true);
     Main();
   });
 
@@ -203,10 +225,13 @@ window.addEventListener("load", function () {
 async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
   lib.assert(image.Size != 0, "Image upload , size must be != 0");
+
+  DisableFlashButton();
+  UpdatePage(false, true);
+  lib.UpdateProgressBar("0%");
+
   // FIXME: uncomment verify tilergatis signature
   // image.VerifyTilergatiSignature();
-
-  lib.UpdateProgressBar("0%");
 
   // Try to find devices
   let [port, api_used]: any = await FindPort().catch((err) => {
@@ -230,6 +255,6 @@ async function Main() {
   await device.FlashFirmware(port, image);
 
   Alert("The process finished successfully", "success");
-  UpdatePage(); // update page after flashing
+  UpdatePage(true, false); // update page after flashing
   return;
 }

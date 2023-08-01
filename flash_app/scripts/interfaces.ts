@@ -72,7 +72,7 @@ export interface NRF_DONGLE_Interface {
 }
 
 export interface NRF_DK_Interface {
-  port: any;
+  usb: any;
   writer: any;
   reader: any;
   filters: any;
@@ -81,4 +81,5 @@ export interface NRF_DK_Interface {
   ClosePort(...params: any): void;
   BulkTransfer(...params: any): void;
   Reset(...params: any): void;
+  GetDfuInterfaceNumber(...params: any): void;
 }

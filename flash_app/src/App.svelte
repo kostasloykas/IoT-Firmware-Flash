@@ -23,8 +23,9 @@
       <div id="message_div" class="alert mt-2 w-50 m-auto" style="display:none;" role="alert" />
     </div>
   </div>
+
   <div class="form-group text-center">
-    <label class="h2" for="console_div">Console</label>
+    <label class="h2 mt-5" for="console_div">Console</label>
     <textarea class="form-control w-50 m-auto" id="console_div" rows="10" readonly style="resize: none;" />
   </div>
 </main>
