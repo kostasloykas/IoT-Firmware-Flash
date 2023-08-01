@@ -157,6 +157,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
         })
         .catch((err) => ERROR("TriggerBootloader", err));
 
+      PRINT("Now i want again serial access to the device in order to start flashing");
       const usbVendorId: number = 0x1915;
       const usbProductId: number = 0x521f;
       await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then((port_: any) => {

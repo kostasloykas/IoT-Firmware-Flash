@@ -268,8 +268,16 @@ export enum FILE_EXTENTION {
 
 // ============================= FUNCTIONS =============================
 
+function KeepCursorAtEnd(textarea: any) {
+  textarea.scrollTop = textarea.scrollHeight;
+}
+
 export function PRINT(...anything: any): void {
   console.log(anything);
+
+  // print in console frame
+  $("#console_div").append(anything + "\n");
+  KeepCursorAtEnd($("#console_div")[0]);
 }
 
 export function ERROR(...anything: any): void {
