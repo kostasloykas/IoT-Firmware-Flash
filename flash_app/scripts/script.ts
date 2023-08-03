@@ -49,6 +49,8 @@ function ClearConsole() {
 // update page
 function UpdatePage(release_flash_button: boolean = true, clear_console: boolean = true) {
   if (release_flash_button) ReleaseFlashButton();
+  else DisableFlashButton();
+
   if (clear_console) ClearConsole();
 }
 
@@ -226,7 +228,6 @@ async function Main() {
   lib.assert(image_selected === true, "No image has been selected");
   lib.assert(image.Size != 0, "Image upload , size must be != 0");
 
-  DisableFlashButton();
   UpdatePage(false, true);
   lib.UpdateProgressBar("0%");
 

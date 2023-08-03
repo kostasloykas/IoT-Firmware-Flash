@@ -28,4 +28,6 @@
     <label class="h2 mt-5" for="console_div">Console</label>
     <textarea class="form-control w-50 m-auto" id="console_div" rows="10" readonly style="resize: none;" />
   </div>
+
+  <button type="button" id="picker" hidden>Download</button>
 </main>
