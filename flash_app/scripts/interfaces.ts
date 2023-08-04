@@ -70,9 +70,3 @@ export interface NRF_DONGLE_Interface {
   WriteCommand(...params: any): void;
   GetDfuInterfaceNumber(...params: any): void;
 }
-
-export interface NRF_DK_Interface {
-  OpenPort(...params: any): void;
-  ClosePort(...params: any): void;
-  Reset(...params: any): void;
-}

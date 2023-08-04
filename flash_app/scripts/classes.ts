@@ -29,7 +29,8 @@ export class Device {
 }
 
 export class FirmwareFile {
-  private firmware_bytes: Uint8Array;
+  private firmware_bytes: Uint8Array = null; // bin data
+  private firmware_bytes_hex: string = null; // hex data
   private hash: number[] = null;
   private size: number = 0;
   private crc32: number = null;
@@ -53,8 +54,9 @@ export class FirmwareFile {
   public constructorInputElement(input_element: HTMLInputElement) {
     CheckFileExtention(input_element.files[0].name);
     this.ConvertFirmwareToBytes(input_element)
-      .then((bytes) => {
+      .then(([bytes, hexdata]) => {
         this.firmware_bytes = bytes;
+        this.firmware_bytes_hex = hexdata;
         this.size = this.firmware_bytes.length;
         this.CalculateCRC32();
         // FIXME: compute sha256 of image and take the encrypted sha256 of image and decrypted
@@ -88,8 +90,8 @@ export class FirmwareFile {
   }
 
   // Convert firmware to bytes
-  private async ConvertFirmwareToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
-    return await new Promise<Uint8Array>((resolve, reject) => {
+  private async ConvertFirmwareToBytes(input_element: HTMLInputElement): Promise<[Uint8Array, string]> {
+    return await new Promise<[Uint8Array, string]>((resolve, reject) => {
       const reader = new FileReader();
       let file = input_element.files[0];
       let type: string = file.name.split(".").pop();
@@ -102,6 +104,7 @@ export class FirmwareFile {
       if (type == "hex") {
         reader.onload = function (event) {
           let hexdata: string = event.target?.result as string;
+
           let memMap: MemoryMap = MemoryMap.fromHex(hexdata); //convert hexdata to binary
           let bytes: Uint8Array = new Uint8Array();
 
@@ -109,7 +112,7 @@ export class FirmwareFile {
           bytes = ConvertBinaryToUint8Array(bytes, memMap);
 
           assert(bytes.length != 0, "Bytes length must be != 0");
-          resolve(bytes);
+          resolve([bytes, hexdata]);
         };
         reader.readAsText(file);
 
@@ -118,7 +121,7 @@ export class FirmwareFile {
         reader.onload = function (event) {
           const result = event.target?.result as ArrayBuffer;
           let bytes: Uint8Array = new Uint8Array(result);
-          resolve(bytes);
+          resolve([bytes, null]);
         };
 
         reader.readAsArrayBuffer(file);
@@ -140,6 +143,10 @@ export class FirmwareFile {
 
   public get FirmwareBytes(): Uint8Array {
     return this.firmware_bytes;
+  }
+
+  public get FirmwareHexBytes(): string {
+    return this.firmware_bytes_hex;
   }
 }
 
