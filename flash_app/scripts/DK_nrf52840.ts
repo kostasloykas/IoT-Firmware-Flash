@@ -19,16 +19,16 @@ export class NRF_DK {
   reader: any = null;
 
   public async FlashFirmware(usb: any, image: FirmwareFile) {
-    this.usb = usb;
-
     //FIXME: check compatibility
-    CheckIfImageIsCompatibleForThisDevice([""], image);
+    CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
+
     UpdateProgressBar("30%");
 
+    // save file into device
     PRINT("Trying to flash firmware in device");
     await this.SaveFileToDevice(image)
-      .then((result) => PRINT("Firmware flashed into device"))
-      .catch((err) => ERROR("SaveFileToDevice"));
+      .then(() => PRINT("Firmware flashed into device"))
+      .catch((err) => ERROR("SaveFileToDevice", err));
     UpdateProgressBar("100%");
   }
 
