@@ -19,12 +19,13 @@ let SUPPORTED_SERIAL_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x1915, 0x520f), new NRF_DONGLE(true)], // nrf52840 dongle bootloader if needs to trigger bootloader
   [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-b
   [new lib.Device(0x1366, 0x1015), new NRF_DK()], // nrf52840 DK
-  [new lib.Device(0x2341, 0x0037), new ARDUINO_MICRO()], // Arduino Micro
-
+  [new lib.Device(0x2341, 0x8037), new ARDUINO_MICRO()], // Arduino Micro
   // [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-cc2538
 ]);
 
-let SUPPORTED_USB_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([]);
+let SUPPORTED_USB_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
+  [new lib.Device(0x0, 0x0), null], // dummy device
+]);
 
 // ====================== FUNCTIONS ==================
 
