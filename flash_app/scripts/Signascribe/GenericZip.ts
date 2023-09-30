@@ -26,25 +26,23 @@ export class GenericZip {
       return [zip1, zip2];
     } else {
       PRINT("Zip file is not from Tilergatis");
-      let zip: FirmwareFile | NRFZIP = this.CreateImageFile();
+
+      // I guess that zip is from nordic
+      let zip: NRFZIP = new NRFZIP(new Uint8Array(this.zip_file.toBuffer()));
+
+      // return only zip file
       return [null, zip];
     }
 
     return [null, null];
   }
 
-  // FIXME: CreateTilergatisZipFileAndImage
+  // CreateTilergatisZipFileAndImage
   private CreateTilergatisZipFileAndImage(zip_file: AdmZip): [TilergatisZip, NRFZIP | FirmwareFile] {
     let tilergatis_zip = new TilergatisZip(zip_file);
-    // Take firmware from tilergatis zip file
-    //let image =  instance.Firmware()
+    let image = tilergatis_zip.Firmware; // Take firmware from tilergatis zip file
 
-    return [tilergatis_zip, null];
-  }
-
-  // FIXME: CreateImageFile
-  private CreateImageFile(): NRFZIP | FirmwareFile {
-    return null;
+    return [tilergatis_zip, image];
   }
 
   private ZipFileIsFromTilergatis(): boolean {

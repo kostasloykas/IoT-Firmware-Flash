@@ -1,9 +1,8 @@
 import AdmZip from "adm-zip";
-import { PRINT, FirmwareFile, NRFZIP, ERROR } from "../classes";
+import { PRINT, FirmwareFile, NRFZIP, ERROR, assert } from "../classes";
 import { ManifestJSON } from "./ManifestJSON";
 import { CertificateChain } from "./Certificate_chain";
 
-// FIXME: TilergatisZip
 export class TilergatisZip {
   private firmware: NRFZIP | FirmwareFile = null;
   private manifest_json: ManifestJSON = null;
@@ -45,11 +44,21 @@ export class TilergatisZip {
           break;
 
         default:
-          ERROR("Uknown file in Tilergatis Zip file");
+          ERROR("Unknown file in Tilergatis Zip file");
           break;
       }
     });
-    PRINT("Tilergatis Zip Decoded");
+
+    //  assert attributes of class
+    assert(this.firmware != null, "Tilergatis Zip firmware must be != null");
+    assert(this.manifest_json != null, "Tilergatis Zip manifest json must be != null");
+    assert(this.signature != null, "Tilergatis Zip signature must be != null");
+    assert(this.certificate_chain != null, "Tilergatis Zip certificate chain must be != null");
+
+    PRINT("Tilergatis Zip Imported Successfully");
+
+    // FIXME: needs try catch
+    this.VerifySignatureAndCertificateChain();
   }
 
   //FIXME: VerifySignature
@@ -58,8 +67,15 @@ export class TilergatisZip {
   //FIXME: VerifyCertificateChain
   private VerifyCertificateChain() {}
 
-  //FIXME: VerifySignatureAndCertificateChain
-  public VerifySignatureAndCertificateChain() {
+  // VerifySignatureAndCertificateChain
+  private VerifySignatureAndCertificateChain() {
+    PRINT("Trying to verify signature");
+    this.VerifySignature();
+    PRINT("Signature verified");
+
+    PRINT("Trying to verify certificate chain");
+    this.VerifyCertificateChain();
+    PRINT("Certificate chain verified");
     return;
   }
 

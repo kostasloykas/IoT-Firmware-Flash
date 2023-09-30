@@ -244,9 +244,6 @@ async function Main() {
   UpdatePage(false, true);
   lib.UpdateProgressBar("0%");
 
-  // FIXME: if image is zip file verify tilergatis signature
-  // VerifyTilergatiSignature();
-
   // Try to find devices
   let [port, api_used]: any = await FindPort().catch((err) => {
     lib.ERROR("FindPort", err);
