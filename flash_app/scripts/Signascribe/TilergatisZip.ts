@@ -5,11 +5,11 @@ import { CertificateChain } from "./Certificate_chain";
 
 export class TilergatisZip {
   private firmware: NRFZIP | FirmwareFile = null;
+  private firmware_bytes: Uint8Array = null; // needs for signature verification
   private manifest_json: ManifestJSON = null;
   private signature: any = null;
   private certificate_chain: CertificateChain = null;
 
-  // FIXME: Tilergatis zip constructor
   public constructor(zip_file: AdmZip) {
     // Concrete it file from zip
     zip_file.forEach((entry) => {
@@ -21,11 +21,13 @@ export class TilergatisZip {
         case "firmware.hex":
           // hex file
           this.firmware = new FirmwareFile(bytes, "Uint8Array");
+          this.firmware_bytes = new Uint8Array(bytes);
           break;
 
         case "firmware.zip":
           // NRF zip file
           this.firmware = new NRFZIP(bytes);
+          this.firmware_bytes = new Uint8Array(bytes);
           break;
 
         case "tilergatis_manifest.json":
@@ -49,7 +51,6 @@ export class TilergatisZip {
       }
     });
 
-    //  assert attributes of class
     assert(this.firmware != null, "Tilergatis Zip firmware must be != null");
     assert(this.manifest_json != null, "Tilergatis Zip manifest json must be != null");
     assert(this.signature != null, "Tilergatis Zip signature must be != null");
