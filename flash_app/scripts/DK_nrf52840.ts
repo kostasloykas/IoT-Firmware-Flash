@@ -19,7 +19,6 @@ export class NRF_DK {
   reader: any = null;
 
   public async FlashFirmware(usb: any, image: FirmwareFile) {
-    //FIXME: check compatibility
     CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
 
     UpdateProgressBar("30%");

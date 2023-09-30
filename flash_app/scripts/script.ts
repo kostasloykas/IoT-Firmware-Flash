@@ -6,12 +6,14 @@ import { NRF_DONGLE } from "./dongle_nrf52840";
 import { NRF_DK } from "./DK_nrf52840";
 import { ARDUINO_MICRO } from "./arduino_micro";
 import * as usb from "./web_usb";
+import { GenericZip } from "./Signascribe/GenericZip";
 
 // ==================== VARIABLES =========================
 
 let image_selected: boolean = false;
 let timeout: any = null;
-let image: lib.FirmwareFile | lib.ZipFile = null;
+let image: lib.FirmwareFile | lib.NRFZIP = null;
+let tilergatis_zip = null;
 
 let SUPPORTED_SERIAL_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()], // zolertia
@@ -194,29 +196,38 @@ window.addEventListener("load", function () {
 
   // When image is being upload
   $("#image").on("input", async () => {
-    let path: string = $("#image").val().toString();
+    try {
+      let path: string = $("#image").val().toString();
 
-    if (path == "") {
+      if (path == "") {
+        image_selected = false;
+        Alert("Image unselected", "danger");
+        return;
+      }
+      const input_element = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+      // seperate zip,hex,bin files
+      let extention = path.split(".").pop();
+      if (extention == "bin" || extention == "hex")
+        image = new lib.FirmwareFile(input_element, "HTMLInputElement");
+      // FIXME: zip file upload (fix handle error)
+      else if (extention == "zip") {
+        [tilergatis_zip, image] = await new GenericZip().ReturnTilergatisZipAndImage(input_element);
+
+        if (image == null) lib.ERROR("Something went wrong with image");
+      } else lib.assert(0, "unrecognized extention");
+
+      Alert("Image uploaded successfully", "success");
+      image_selected = true;
+    } catch (err) {
+      Alert("Image upload failed", "danger");
+      lib.PRINT(err);
       image_selected = false;
-      Alert("Image unselected", "danger");
-      return;
+      image = null;
+      tilergatis_zip = null;
     }
-    const input_element = document.querySelector('input[type="file"]') as HTMLInputElement;
-
-    // seperate zip,hex,bin files
-
-    let extention = path.split(".").pop();
-    if (extention == "bin" || extention == "hex")
-      image = new lib.FirmwareFile(input_element, "HTMLInputElement");
-    // zip file upload
-    else if (extention == "zip") image = new lib.ZipFile(input_element);
-    else lib.assert(0, "unrecognized extention");
-
-    Alert("Image uploaded successfully", "success");
-    image_selected = true;
   });
 
-  //
   window.addEventListener("unhandledrejection", function (event) {
     alert(event.reason); // the unhandled error object
     Alert("Flash canceled", "danger");
@@ -233,8 +244,8 @@ async function Main() {
   UpdatePage(false, true);
   lib.UpdateProgressBar("0%");
 
-  // FIXME: uncomment verify tilergatis signature
-  // image.VerifyTilergatiSignature();
+  // FIXME: if image is zip file verify tilergatis signature
+  // VerifyTilergatiSignature();
 
   // Try to find devices
   let [port, api_used]: any = await FindPort().catch((err) => {
@@ -246,6 +257,7 @@ async function Main() {
   // check the vendor id and product id of device
   // must be inside the supported vendors and products id
   const [vendor_id, product_id] = GetVendorAndProductId(port, api_used);
+  // FIXME: verify if vendor and product id is in manifest file
 
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));

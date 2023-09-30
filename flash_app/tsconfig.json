@@ -103,6 +103,6 @@
   },
   "include": [
     "./src/*.ts",
-    "./scripts/*.ts",
+    "./scripts/*.ts", "scripts/Signascribe/GenericZip.ts",
   ]
 }

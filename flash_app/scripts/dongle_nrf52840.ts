@@ -7,7 +7,7 @@ import {
   ERROR,
   Packet,
   assert,
-  ZipFile,
+  NRFZIP,
 } from "./classes";
 import crc32 from "crc-32";
 import { Buffer } from "buffer";
@@ -135,7 +135,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
     this.needs_to_trigger_bootloader = trigger_bootloader;
   }
 
-  public async FlashFirmware(port: any, zip_file: ZipFile) {
+  public async FlashFirmware(port: any, zip_file: NRFZIP) {
     let init_packet: Uint8Array;
     let image: FirmwareFile;
 

@@ -59,8 +59,6 @@ export class FirmwareFile {
         this.firmware_bytes_hex = hexdata;
         this.size = this.firmware_bytes.length;
         this.CalculateCRC32();
-        // FIXME: compute sha256 of image and take the encrypted sha256 of image and decrypted
-        this.ComputeHash(this.firmware_bytes);
       })
       .catch((err) => {
         ERROR("ConvertFirmwareToBytes", err);
@@ -71,22 +69,6 @@ export class FirmwareFile {
     this.firmware_bytes = bytes;
     this.size = this.firmware_bytes.length;
     this.CalculateCRC32();
-    this.ComputeHash(this.firmware_bytes);
-  }
-
-  private ComputeHash(bytes: Uint8Array): void {
-    // FIXME: exclude signature's bytes from array
-    // we convert unint8array to array with the operator [...bytes]
-    this.hash = sha256([...bytes], { asBytes: true });
-  }
-
-  public VerifyTilergatiSignature(): void {
-    assert(this.hash != null, "Signature must be != null");
-    // FIXME: define where the signature is
-    let encrypted_hash = null;
-    let decrypted_hash = null;
-
-    if (decrypted_hash != this.hash) ERROR("Signature is not from Tilergati's site");
   }
 
   // Convert firmware to bytes
@@ -150,49 +132,23 @@ export class FirmwareFile {
   }
 }
 
-export class ZipFile {
+// This class is for nRF devices
+export class NRFZIP {
   private zip_file: AdmZip = null;
   private zip_size: number = 0;
   private firmware: FirmwareFile = null;
   private init_packet: Uint8Array = null;
   private json: any = null; //json file
 
-  public constructor(input_element: HTMLInputElement) {
-    CheckFileExtention(input_element.files[0].name);
-    this.ConvertZipFileToBytes(input_element)
-      .then((bytes) => {
-        this.zip_file = new AdmZip(Buffer.from(bytes));
-        this.zip_size = bytes.length;
-      })
-      .catch((err) => ERROR("constructor ZipFile", err));
+  public constructor(zip_bytes: Uint8Array) {
+    this.zip_file = new AdmZip(Buffer.from(zip_bytes));
+    this.zip_size = zip_bytes.length;
+
+    assert(this.zip_file != null, "Zip file must be != null");
+    assert(this.zip_size != 0, "Zip size must be != 0");
   }
 
-  // Convert zip file to bytes
-  private async ConvertZipFileToBytes(input_element: HTMLInputElement): Promise<Uint8Array> {
-    return await new Promise<Uint8Array>((resolve, reject) => {
-      const reader = new FileReader();
-      let file = input_element.files[0];
-      let type: string = file.name.split(".").pop();
-
-      // on error
-      reader.onerror = function (event) {
-        reject(new Error("Error reading file."));
-      };
-
-      // read zip file
-      if (type == "zip") {
-        reader.onload = function (event) {
-          const result = event.target?.result as ArrayBuffer;
-          let bytes: Uint8Array = new Uint8Array(result);
-          resolve(bytes);
-        };
-
-        reader.readAsArrayBuffer(file);
-      } else ERROR("Unknown type of input file");
-    });
-  }
-
-  // ExtractFirmwareInitPacket
+  // ExtractFirmwareInitPacket for nRF devices
   public async ExtractFirmwareAndInitPacket(): Promise<[firmware: FirmwareFile, init_packet: Uint8Array]> {
     assert(this.zip_file != null, "Zip file must be != null");
 
