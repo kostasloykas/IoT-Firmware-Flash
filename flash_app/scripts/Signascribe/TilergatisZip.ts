@@ -65,7 +65,8 @@ export class TilergatisZip {
         this.manifest_json.HashAlgorithm,
         this.manifest_json.Bytes,
         this.certificate_chain.Bytes,
-        this.firmware_bytes
+        this.firmware_bytes,
+        this.manifest_json.SignAlgorithmPublicKey
       )
       .catch((err) => {
         ERROR("VerifySignature", err);
