@@ -1,3 +1,4 @@
+import { Signature } from "./Signature";
 import AdmZip from "adm-zip";
 import { PRINT, FirmwareFile, NRFZIP, ERROR, assert } from "../classes";
 import { ManifestJSON } from "./ManifestJSON";
@@ -5,9 +6,9 @@ import { CertificateChain } from "./Certificate_chain";
 
 export class TilergatisZip {
   private firmware: NRFZIP | FirmwareFile = null;
-  private firmware_bytes: Uint8Array = null; // needs for signature verification
+  private firmware_bytes: Buffer = null; // needs for signature verification
   private manifest_json: ManifestJSON = null;
-  private signature: any = null;
+  private signature: Signature = null;
   private certificate_chain: CertificateChain = null;
 
   public constructor(zip_file: AdmZip) {
@@ -21,20 +22,17 @@ export class TilergatisZip {
         case "firmware.hex":
           // hex file
           this.firmware = new FirmwareFile(bytes, "Uint8Array");
-          this.firmware_bytes = new Uint8Array(bytes);
+          this.firmware_bytes = bytes;
           break;
 
         case "firmware.zip":
           // NRF zip file
           this.firmware = new NRFZIP(bytes);
-          this.firmware_bytes = new Uint8Array(bytes);
+          this.firmware_bytes = bytes;
           break;
 
         case "tilergatis_manifest.json":
-          // convert bytes to json
-          const decoder = new TextDecoder("utf-8");
-          const jsonString = decoder.decode(bytes);
-          this.manifest_json = new ManifestJSON(JSON.parse(jsonString));
+          this.manifest_json = new ManifestJSON(bytes);
           break;
 
         case "certificate_chain.pem":
@@ -42,7 +40,7 @@ export class TilergatisZip {
           break;
 
         case "signature.dat":
-          this.signature = bytes;
+          this.signature = new Signature(bytes);
           break;
 
         default:
@@ -57,22 +55,36 @@ export class TilergatisZip {
     assert(this.certificate_chain != null, "Tilergatis Zip certificate chain must be != null");
 
     PRINT("Tilergatis Zip Imported Successfully");
-
-    // FIXME: needs try catch
-    this.VerifySignatureAndCertificateChain();
   }
 
   //FIXME: VerifySignature
-  private VerifySignature() {}
+  private async VerifySignature() {
+    await this.signature
+      .Verify(
+        this.manifest_json.SignAlgorithmType,
+        this.manifest_json.HashAlgorithm,
+        this.manifest_json.Bytes,
+        this.certificate_chain.Bytes,
+        this.firmware_bytes
+      )
+      .catch((err) => {
+        ERROR("VerifySignature", err);
+      });
+  }
 
   //FIXME: VerifyCertificateChain
-  private VerifyCertificateChain() {}
+  private async VerifyCertificateChain() {}
 
   // VerifySignatureAndCertificateChain
-  private VerifySignatureAndCertificateChain() {
+  public async VerifySignatureAndCertificateChain() {
     PRINT("Trying to verify signature");
-    this.VerifySignature();
-    PRINT("Signature verified");
+    await this.VerifySignature()
+      .then(() => {
+        PRINT("Signature verified");
+      })
+      .catch((err) => {
+        ERROR("VerifySignatureAndCertificateChain", err);
+      });
 
     PRINT("Trying to verify certificate chain");
     this.VerifyCertificateChain();

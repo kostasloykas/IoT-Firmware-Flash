@@ -1,5 +1,13 @@
 import { Buffer } from "buffer";
 
 export class CertificateChain {
-  constructor(bytes: Buffer) {}
+  private bytes: Buffer = null;
+
+  constructor(bytes: Buffer) {
+    this.bytes = bytes;
+  }
+
+  public get Bytes(): Buffer {
+    return this.bytes;
+  }
 }

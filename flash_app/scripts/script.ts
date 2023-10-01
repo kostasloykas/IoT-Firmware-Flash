@@ -214,6 +214,11 @@ window.addEventListener("load", function () {
       else if (extention == "zip") {
         [tilergatis_zip, image] = await new GenericZip().ReturnTilergatisZipAndImage(input_element);
 
+        if (tilergatis_zip != null)
+          await tilergatis_zip.VerifySignatureAndCertificateChain().catch((err) => {
+            lib.ERROR("On input of image", err);
+          });
+
         if (image == null) lib.ERROR("Something went wrong with image");
       } else lib.assert(0, "unrecognized extention");
 

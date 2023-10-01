@@ -1,6 +1,7 @@
 import { assert, DEBUG, ERROR, PRINT } from "../classes";
 
 export class ManifestJSON {
+  private bytes: Buffer = null;
   private manifest_version: number = null;
   private common_name: number = null;
   private vendor_id: number = null;
@@ -12,7 +13,13 @@ export class ManifestJSON {
   private firmware_type: string = null;
   private firmware_size: number = null;
 
-  constructor(json: any) {
+  constructor(bytes: any) {
+    this.bytes = bytes;
+    // convert bytes to json
+    const decoder = new TextDecoder("utf-8");
+    const jsonString = decoder.decode(bytes);
+    let json: any = JSON.parse(jsonString);
+
     // check the manifest version
     this.manifest_version = Number.parseInt(json.manifest_version);
 
@@ -88,5 +95,9 @@ export class ManifestJSON {
 
   get FirmwareSize(): number {
     return this.firmware_size;
+  }
+
+  public get Bytes(): Buffer {
+    return this.bytes;
   }
 }
