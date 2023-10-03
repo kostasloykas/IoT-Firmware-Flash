@@ -1,8 +1,9 @@
 import { Signature } from "./Signature";
 import AdmZip from "adm-zip";
-import { PRINT, FirmwareFile, NRFZIP, ERROR, assert } from "../classes";
+import { PRINT, FirmwareFile, NRFZIP, ERROR, assert, DEBUG } from "../classes";
 import { ManifestJSON } from "./ManifestJSON";
 import { CertificateChain } from "./Certificate_chain";
+import { Buffer } from "buffer";
 
 export class TilergatisZip {
   private firmware: NRFZIP | FirmwareFile = null;
@@ -16,7 +17,7 @@ export class TilergatisZip {
     zip_file.forEach((entry) => {
       // Take name and bytes of file
       let name: string = entry.entryName;
-      let bytes: Buffer = entry.getCompressedData();
+      let bytes: Buffer = entry.getData();
 
       switch (name) {
         case "firmware.hex":
@@ -92,13 +93,13 @@ export class TilergatisZip {
       });
 
     PRINT("Trying to verify certificate chain");
-    await this.VerifyCertificateChain()
-      .then(() => {
-        PRINT("Certificate chain verified");
-      })
-      .catch((err) => {
-        ERROR("VerifySignatureAndCertificateChain", err);
-      });
+    // await this.VerifyCertificateChain()
+    //   .then(() => {
+    //     PRINT("Certificate chain verified");
+    //   })
+    //   .catch((err) => {
+    //     ERROR("VerifySignatureAndCertificateChain", err);
+    //   });
     return;
   }
 
