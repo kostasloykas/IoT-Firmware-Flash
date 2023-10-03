@@ -93,13 +93,13 @@ export class TilergatisZip {
       });
 
     PRINT("Trying to verify certificate chain");
-    // await this.VerifyCertificateChain()
-    //   .then(() => {
-    //     PRINT("Certificate chain verified");
-    //   })
-    //   .catch((err) => {
-    //     ERROR("VerifySignatureAndCertificateChain", err);
-    //   });
+    await this.VerifyCertificateChain()
+      .then(() => {
+        PRINT("Certificate chain verified");
+      })
+      .catch((err) => {
+        ERROR("VerifySignatureAndCertificateChain", err);
+      });
     return;
   }
 
