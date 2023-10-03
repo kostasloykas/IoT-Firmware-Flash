@@ -74,7 +74,11 @@ export class TilergatisZip {
   }
 
   //FIXME: VerifyCertificateChain
-  private async VerifyCertificateChain() {}
+  private async VerifyCertificateChain() {
+    await this.certificate_chain.Verify().catch((err) => {
+      ERROR("VerifyCertificateChain", err);
+    });
+  }
 
   // VerifySignatureAndCertificateChain
   public async VerifySignatureAndCertificateChain() {
@@ -88,8 +92,13 @@ export class TilergatisZip {
       });
 
     PRINT("Trying to verify certificate chain");
-    this.VerifyCertificateChain();
-    PRINT("Certificate chain verified");
+    await this.VerifyCertificateChain()
+      .then(() => {
+        PRINT("Certificate chain verified");
+      })
+      .catch((err) => {
+        ERROR("VerifySignatureAndCertificateChain", err);
+      });
     return;
   }
 

@@ -27,7 +27,6 @@ export class Signature {
     firmware: Buffer,
     public_key: string
   ) {
-    DEBUG(sign_algorithm);
     if (!this.SUPPORTED_SIGN_ALGORITHM.includes(sign_algorithm)) ERROR("Unsupported sign algorithm");
     if (!this.SUPPORTED_HASH_ALGORITHM.includes(hash_algorithm)) ERROR("Unsupported hash algorithm");
 
@@ -37,9 +36,6 @@ export class Signature {
     let hash = await this.HASH.get(hash_algorithm)(message);
     let signature: string = this.bytes.toString();
 
-    DEBUG("hash->", hash);
-    DEBUG("signature->", signature);
-    DEBUG("public key->", public_key);
     let verified: boolean = this.SIGN.get(sign_algorithm).verify(signature, hash, public_key);
     if (!verified) ERROR("Couldn't Verify Signature");
   }
