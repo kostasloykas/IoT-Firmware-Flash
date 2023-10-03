@@ -57,7 +57,7 @@ export class TilergatisZip {
     PRINT("Tilergatis Zip Imported Successfully");
   }
 
-  //FIXME: VerifySignature
+  // VerifySignature
   private async VerifySignature() {
     await this.signature
       .Verify(

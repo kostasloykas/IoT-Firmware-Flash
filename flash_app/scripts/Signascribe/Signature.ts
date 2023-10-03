@@ -3,16 +3,6 @@ import { DEBUG, ERROR } from "../classes";
 import { sha256 } from "crypto-hash";
 import { ed448 } from "@noble/curves/ed448";
 import { ed25519 } from "@noble/curves/ed25519";
-import { Crypto } from "@peculiar/webcrypto";
-
-function fromPEM(data: any) {
-  var text = data.toString().split(/(\r\n|\r|\n)+/g);
-  text = text.filter(function (line: any) {
-    return line.trim().length !== 0;
-  });
-  text = text.slice(1, -1).join("");
-  return Buffer.from(text.replace(/[^\w\d\+\/=]+/g, ""), "base64");
-}
 
 export class Signature {
   private SUPPORTED_HASH_ALGORITHM = ["sha256"];
@@ -28,7 +18,7 @@ export class Signature {
     this.bytes = bytes;
   }
 
-  // FIXME: Signature Verify
+  // Signature Verify
   public async Verify(
     sign_algorithm: string,
     hash_algorithm: string,
