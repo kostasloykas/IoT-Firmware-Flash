@@ -3,6 +3,16 @@ import { DEBUG, ERROR } from "../classes";
 import { sha256 } from "crypto-hash";
 import { ed448 } from "@noble/curves/ed448";
 import { ed25519 } from "@noble/curves/ed25519";
+import { Crypto } from "@peculiar/webcrypto";
+
+function fromPEM(data: any) {
+  var text = data.toString().split(/(\r\n|\r|\n)+/g);
+  text = text.filter(function (line: any) {
+    return line.trim().length !== 0;
+  });
+  text = text.slice(1, -1).join("");
+  return Buffer.from(text.replace(/[^\w\d\+\/=]+/g, ""), "base64");
+}
 
 export class Signature {
   private SUPPORTED_HASH_ALGORITHM = ["sha256"];
@@ -33,30 +43,15 @@ export class Signature {
 
     let message = Buffer.concat([firmware, manifest_json, certificate_chain]);
 
-    // generate hash (depends on hash algorithm)
+    // calculate hash , signature , public_key
     let hash = await this.HASH.get(hash_algorithm)(message);
+    let signature: string = this.bytes.toString();
 
-    DEBUG(this.bytes.toString("hex"));
-    // verify signature
-    let verified: boolean = this.SIGN.get(sign_algorithm).verify(
-      this.bytes.toString("hex"),
-      hash,
-      public_key //FIXME: public_key
-    );
+    DEBUG("hash->", hash);
+    DEBUG("signature->", signature);
+    DEBUG("public key->", public_key);
+    let verified: boolean = this.SIGN.get(sign_algorithm).verify(signature, hash, public_key);
     if (!verified) ERROR("Couldn't Verify Signature");
-
-    // Convert PEM to Buffer
-    // const publicKeyBuffer = Crypto.createPublicKey({
-    //   key: public_key,
-    //   format: "pem",
-    //   type: "spki",
-    // }).export({ type: "spki", format: "der" });
-
-    // const kos = crypto.createPublicKey({
-    //   key: public_key,
-    //   format: "pem",
-    //   type: "spki",
-    // }).type;
   }
 
   public get Bytes(): Buffer {
