@@ -1,6 +1,7 @@
 import { Buffer } from "buffer";
 import { DEBUG, ERROR, assert } from "../classes";
 import * as https from "https";
+import axios from "axios";
 
 export class CertificateChain {
   private bytes: Buffer = null;
@@ -12,10 +13,6 @@ export class CertificateChain {
   // FIXME: contructor Certificate Chain
   constructor(bytes: Buffer) {
     this.bytes = bytes;
-
-    // load certificates
-    this.trusted_CA = this.LoadListOfTrustedCaCertificates();
-    DEBUG(bytes.toString("utf-8"));
 
     // init owner certificate and intermediate
 
@@ -32,23 +29,18 @@ export class CertificateChain {
   }
 
   // FIXME: Load CA's certificate list
-  private LoadListOfTrustedCaCertificates(): any {
+  private async LoadListOfTrustedCaCertificates(): Promise<string> {
     // load mozilla's trusted certificates list
-    https
-      .get("/index.html", (response) => {
-        let responseData: string = "";
-
-        response.on("data", (chunk) => {
-          responseData += chunk;
-        });
-
-        response.on("end", () => {
-          DEBUG("response data are ", responseData);
-        });
+    await axios
+      .get("https://corsproxy.io/?https://curl.se/ca/cacert.pem")
+      .then((response) => {
+        const responseData = response.data;
+        DEBUG(responseData);
       })
-      .on("error", (err) => {
-        ERROR("Error downloading trusted CA certificates file", err);
+      .catch((err) => {
+        ERROR(`Error fetching data:`, err);
       });
+
     // make them all x509 objects
     return null;
   }
@@ -64,7 +56,10 @@ export class CertificateChain {
   }
 
   // FIXME: Verify Certificate
-  public async Verify() {}
+  public async Verify() {
+    // load certificates
+    await this.LoadListOfTrustedCaCertificates();
+  }
 
   public get Bytes(): Buffer {
     return this.bytes;
