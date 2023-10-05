@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { DEBUG, ERROR, assert } from "../classes";
+import { DEBUG, ERROR, PRINT, assert } from "../classes";
 import axios from "axios";
 import { pki as x509 } from "node-forge";
 
@@ -9,27 +9,22 @@ export class CertificateChain {
   private intermediate_certificates: x509.Certificate[] = [];
   private common_name: string = null;
 
-  // FIXME: contructor Certificate Chain
+  // contructor Certificate Chain
   constructor(bytes: Buffer) {
     this.bytes = bytes;
     let certificates: string[] = this.SeparateX509Certificates(bytes.toString("utf-8"));
 
-    DEBUG("length of certificates is ", certificates.length);
-
     // get owner certificate
-    this.owner_certificate = x509.certificateFromPem(this.GetOwnerCertificate(certificates));
+    this.owner_certificate = this.GetOwnerCertificate(certificates);
 
     // get intermediate certificates
-    for (let cert of this.GetIntermediateCertificates(certificates)) {
-      this.intermediate_certificates.push(x509.certificateFromPem(cert));
-    }
+    this.intermediate_certificates = this.GetIntermediateCertificates(certificates);
 
     // // get common name
     this.common_name = this.owner_certificate.subject.attributes[0].value as string;
-    DEBUG(this.common_name);
+    PRINT("Common name of certificate -> " + this.common_name);
 
     assert(this.owner_certificate != null, "Owner certificate must be != null");
-    assert(this.intermediate_certificates.length != 0, "Intermediate certificates must be != null");
     assert(this.common_name != null, "Common name must be != null");
   }
 
@@ -69,16 +64,20 @@ export class CertificateChain {
   }
 
   // GetOwnerCertificate
-  private GetOwnerCertificate(certificates: string[]): any {
-    return certificates[0];
+  private GetOwnerCertificate(certificates: string[]): x509.Certificate {
+    return x509.certificateFromPem(certificates[0]);
   }
 
-  // FIXME: GetIntermediateCertificates
-  private GetIntermediateCertificates(certificates: string[]): any {
-    return certificates.slice(1);
+  // GetIntermediateCertificates
+  private GetIntermediateCertificates(certificates: string[]): x509.Certificate[] {
+    let inter_certificates: x509.Certificate[] = [];
+    for (let cert of certificates.slice(1)) {
+      inter_certificates.push(x509.certificateFromPem(cert));
+    }
+    return inter_certificates;
   }
 
-  // FIXME: Verify Certificate
+  // Verify Certificate
   public async Verify() {
     // load trusted certificates
     let ca_store: x509.CAStore = null;
@@ -101,8 +100,37 @@ export class CertificateChain {
 
     assert(ca_store != null, "CA Store must be != null");
 
-    for (let cert of ca_store.listAllCertificates()) {
-      this.common_name = cert.issuer.attributes[1].value as string;
+    // verify intermediate certificates
+    this.VerifyIntermediateCertificates(this.intermediate_certificates, ca_store);
+
+    // add intermediate certificates to CA store
+    this.AddCertificatesToCAStore(this.intermediate_certificates, ca_store);
+
+    // verify owner certificate
+    this.VerifyOwnerCertificate(this.owner_certificate, ca_store);
+  }
+
+  private AddCertificatesToCAStore(certificates: x509.Certificate[], ca_store: x509.CAStore) {
+    for (let cert of certificates) ca_store.addCertificate(cert);
+  }
+
+  private VerifyIntermediateCertificates(
+    intermediate_certificates: x509.Certificate[],
+    ca_store: x509.CAStore
+  ) {
+    if (intermediate_certificates.length != 0)
+      try {
+        let flag: boolean = x509.verifyCertificateChain(ca_store, this.intermediate_certificates);
+      } catch (err) {
+        ERROR("Couldn't validate intermediate certificate chain");
+      }
+  }
+
+  private VerifyOwnerCertificate(owner_certificate: x509.Certificate, ca_store: x509.CAStore) {
+    try {
+      let flag: boolean = x509.verifyCertificateChain(ca_store, [owner_certificate]);
+    } catch (err) {
+      ERROR("Couldn't validate owner certificate");
     }
   }
 

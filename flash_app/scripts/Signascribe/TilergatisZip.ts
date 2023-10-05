@@ -74,7 +74,7 @@ export class TilergatisZip {
       });
   }
 
-  //FIXME: VerifyCertificateChain
+  // VerifyCertificateChain
   private async VerifyCertificateChain() {
     await this.certificate_chain.Verify().catch((err) => {
       ERROR("VerifyCertificateChain", err);
