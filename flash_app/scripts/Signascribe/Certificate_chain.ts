@@ -5,28 +5,35 @@ import { pki as x509 } from "node-forge";
 
 export class CertificateChain {
   private bytes: Buffer = null;
-  private owner_certificate: any = null;
-  private intermediate_certificates: any = null;
+  private owner_certificate: x509.Certificate = null;
+  private intermediate_certificates: x509.Certificate[] = [];
   private common_name: string = null;
-  private trusted_CA: string = null;
 
   // FIXME: contructor Certificate Chain
   constructor(bytes: Buffer) {
     this.bytes = bytes;
+    let certificates: string[] = this.SeparateX509Certificates(bytes.toString("utf-8"));
+
+    DEBUG("length of certificates is ", certificates.length);
 
     // get owner certificate
+    this.owner_certificate = x509.certificateFromPem(this.GetOwnerCertificate(certificates));
 
     // get intermediate certificates
+    for (let cert of this.GetIntermediateCertificates(certificates)) {
+      this.intermediate_certificates.push(x509.certificateFromPem(cert));
+    }
 
-    // get common name
+    // // get common name
+    this.common_name = this.owner_certificate.subject.attributes[0].value as string;
+    DEBUG(this.common_name);
 
-    // FIXME: assertions
-    // assert(this.owner_certificate != null, "");
-    // assert(this.intermediate_certificates != null, "");
-    // assert(this.common_name != null, "");
+    assert(this.owner_certificate != null, "Owner certificate must be != null");
+    assert(this.intermediate_certificates.length != 0, "Intermediate certificates must be != null");
+    assert(this.common_name != null, "Common name must be != null");
   }
 
-  private DistinguishCertificates(file: string): any {
+  private Certificates(file: string): any {
     return null;
   }
 
@@ -61,14 +68,14 @@ export class CertificateChain {
     return certificates;
   }
 
-  // FIXME: GetOwnerCertificate
-  private GetOwnerCertificate(bytes: Buffer): any {
-    return null;
+  // GetOwnerCertificate
+  private GetOwnerCertificate(certificates: string[]): any {
+    return certificates[0];
   }
 
   // FIXME: GetIntermediateCertificates
-  private GetIntermediateCertificates(bytes: Buffer): any {
-    return null;
+  private GetIntermediateCertificates(certificates: string[]): any {
+    return certificates.slice(1);
   }
 
   // FIXME: Verify Certificate
