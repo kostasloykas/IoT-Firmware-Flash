@@ -103,6 +103,14 @@ export class TilergatisZip {
     return;
   }
 
+  public VerifyVendorAndProductID(vendor_id: number, product_id: number) {
+    let json_vendor: number = this.manifest_json.VendorId;
+    let json_product: number = this.manifest_json.ProductId;
+
+    if (vendor_id != json_vendor) ERROR("Device's Vendor ID is different from json file");
+    if (product_id != json_product) ERROR("Device's Product ID is different from json file");
+  }
+
   public get Firmware(): NRFZIP | FirmwareFile {
     return this.firmware;
   }

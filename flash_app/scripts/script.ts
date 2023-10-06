@@ -7,13 +7,14 @@ import { NRF_DK } from "./DK_nrf52840";
 import { ARDUINO_MICRO } from "./arduino_micro";
 import * as usb from "./web_usb";
 import { GenericZip } from "./Signascribe/GenericZip";
+import { TilergatisZip } from "./Signascribe/TilergatisZip";
 
 // ==================== VARIABLES =========================
 
 let image_selected: boolean = false;
 let timeout: any = null;
 let image: lib.FirmwareFile | lib.NRFZIP = null;
-let tilergatis_zip = null;
+let tilergatis_zip: TilergatisZip = null;
 
 let SUPPORTED_SERIAL_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()], // zolertia
@@ -210,7 +211,7 @@ window.addEventListener("load", function () {
       let extention = path.split(".").pop();
       if (extention == "bin" || extention == "hex")
         image = new lib.FirmwareFile(input_element, "HTMLInputElement");
-      // FIXME: zip file upload (fix handle error)
+      // zip file upload
       else if (extention == "zip") {
         [tilergatis_zip, image] = await new GenericZip().ReturnTilergatisZipAndImage(input_element);
 
@@ -259,7 +260,11 @@ async function Main() {
   // check the vendor id and product id of device
   // must be inside the supported vendors and products id
   const [vendor_id, product_id] = GetVendorAndProductId(port, api_used);
+
   // FIXME: verify if vendor and product id is in manifest file
+  if (tilergatis_zip != null) {
+    tilergatis_zip.VerifyVendorAndProductID(vendor_id, product_id);
+  }
 
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));
