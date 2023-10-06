@@ -113,7 +113,7 @@ export class TilergatisZip {
     return;
   }
 
-  //FIXME: VerifyFirmwareProperties
+  // VerifyFirmwareProperties
   private async VerifyFirmwareProperties() {
     if (this.Firmware.Size != this.firmware_bytes.length) ERROR("Firmware size is different from json file");
   }
