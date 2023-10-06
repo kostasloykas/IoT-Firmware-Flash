@@ -81,13 +81,6 @@ export class TilergatisZip {
     });
   }
 
-  //FIXME: VerifyFirmwareProperties
-  private async VerifyFirmwareProperties() {
-    await this.certificate_chain.Verify().catch((err) => {
-      ERROR("VerifyCertificateChain", err);
-    });
-  }
-
   // VerifySignatureAndCertificateChain
   public async Verify() {
     PRINT("Trying to verify signature");
@@ -109,10 +102,20 @@ export class TilergatisZip {
       });
 
     PRINT("Trying to verify Firmware Properties");
-    this.VerifyFirmwareProperties();
-    PRINT("Firmware properties verified");
+    this.VerifyFirmwareProperties()
+      .then(() => {
+        PRINT("Firmware properties verified");
+      })
+      .catch((err) => {
+        ERROR("VerifyFirmwareProperties", err);
+      });
 
     return;
+  }
+
+  //FIXME: VerifyFirmwareProperties
+  private async VerifyFirmwareProperties() {
+    if (this.Firmware.Size != this.firmware_bytes.length) ERROR("Firmware size is different from json file");
   }
 
   public VerifyVendorAndProductID(vendor_id: number, product_id: number) {

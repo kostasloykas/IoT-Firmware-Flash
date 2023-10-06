@@ -23,7 +23,6 @@ export class CertificateChain {
 
     // // get common name
     this.common_name = this.owner_certificate.subject.attributes[0].value as string;
-    PRINT("Common name of certificate -> " + this.common_name);
 
     assert(this.owner_certificate != null, "Owner certificate must be != null");
     assert(this.common_name != null, "Common name must be != null");
@@ -52,7 +51,6 @@ export class CertificateChain {
     assert(mozillas_certificates != null, "Mozilla's certificates must be != null");
     return certificates;
   }
-
   private SeparateX509Certificates(pemString: string): string[] {
     const certificates: string[] = [];
     const regex = /-----BEGIN CERTIFICATE-----[^-]*-----END CERTIFICATE-----/g;
