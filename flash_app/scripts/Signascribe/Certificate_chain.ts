@@ -4,6 +4,7 @@ import axios from "axios";
 import { pki as x509 } from "node-forge";
 
 // FIXME: Add codegic certificates
+// FIXME: Add codegic certificates
 export class CertificateChain {
   private bytes: Buffer = null;
   private owner_certificate: x509.Certificate = null;
