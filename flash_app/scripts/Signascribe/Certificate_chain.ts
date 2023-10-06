@@ -4,7 +4,6 @@ import axios from "axios";
 import { pki as x509 } from "node-forge";
 
 // FIXME: Add codegic certificates
-// FIXME: Add codegic certificates
 export class CertificateChain {
   private bytes: Buffer = null;
   private owner_certificate: x509.Certificate = null;
@@ -37,6 +36,7 @@ export class CertificateChain {
   private async LoadListOfTrustedCaCertificates(): Promise<string[]> {
     // load mozilla's trusted certificates list
     let mozillas_certificates: string = null;
+    let local_certificates: string = null;
 
     await axios
       .get("https://corsproxy.io/?https://curl.se/ca/cacert.pem")
@@ -44,12 +44,24 @@ export class CertificateChain {
         mozillas_certificates = response.data;
       })
       .catch((err) => {
-        ERROR(`Error fetching data:`, err);
+        ERROR(`Error fetching mozillas data:`, err);
       });
 
-    let certificates: string[] = this.SeparateX509Certificates(mozillas_certificates);
+    await axios
+      .get("/certificates/local_certificates.pem")
+      .then((response) => {
+        local_certificates = response.data;
+        DEBUG(local_certificates);
+      })
+      .catch((err) => {
+        ERROR(`Error  fetching local certificates data:`, err);
+      });
+
+    let imported_certificates = mozillas_certificates + local_certificates;
+    let certificates: string[] = this.SeparateX509Certificates(imported_certificates);
 
     assert(mozillas_certificates != null, "Mozilla's certificates must be != null");
+    assert(local_certificates != null, "Local certificates must be != null");
     return certificates;
   }
   private SeparateX509Certificates(pemString: string): string[] {
@@ -99,6 +111,7 @@ export class CertificateChain {
       });
 
     assert(ca_store != null, "CA Store must be != null");
+    DEBUG(ca_store.listAllCertificates().length);
 
     // verify intermediate certificates
     this.VerifyIntermediateCertificates(this.intermediate_certificates, ca_store);
@@ -120,7 +133,7 @@ export class CertificateChain {
   ) {
     if (intermediate_certificates.length != 0)
       try {
-        let flag: boolean = x509.verifyCertificateChain(ca_store, this.intermediate_certificates);
+        x509.verifyCertificateChain(ca_store, this.intermediate_certificates);
       } catch (err) {
         ERROR("Couldn't validate intermediate certificate chain");
       }
@@ -128,7 +141,7 @@ export class CertificateChain {
 
   private VerifyOwnerCertificate(owner_certificate: x509.Certificate, ca_store: x509.CAStore) {
     try {
-      let flag: boolean = x509.verifyCertificateChain(ca_store, [owner_certificate]);
+      x509.verifyCertificateChain(ca_store, [owner_certificate]);
     } catch (err) {
       ERROR("Couldn't validate owner certificate");
     }
