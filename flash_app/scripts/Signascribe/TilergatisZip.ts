@@ -81,8 +81,15 @@ export class TilergatisZip {
     });
   }
 
+  //FIXME: VerifyFirmwareProperties
+  private async VerifyFirmwareProperties() {
+    await this.certificate_chain.Verify().catch((err) => {
+      ERROR("VerifyCertificateChain", err);
+    });
+  }
+
   // VerifySignatureAndCertificateChain
-  public async VerifySignatureAndCertificateChain() {
+  public async Verify() {
     PRINT("Trying to verify signature");
     await this.VerifySignature()
       .then(() => {
@@ -100,6 +107,11 @@ export class TilergatisZip {
       .catch((err) => {
         ERROR("VerifySignatureAndCertificateChain", err);
       });
+
+    PRINT("Trying to verify Firmware Properties");
+    this.VerifyFirmwareProperties();
+    PRINT("Firmware properties verified");
+
     return;
   }
 

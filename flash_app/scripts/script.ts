@@ -216,7 +216,7 @@ window.addEventListener("load", function () {
         [tilergatis_zip, image] = await new GenericZip().ReturnTilergatisZipAndImage(input_element);
 
         if (tilergatis_zip != null)
-          await tilergatis_zip.VerifySignatureAndCertificateChain().catch((err) => {
+          await tilergatis_zip.Verify().catch((err) => {
             lib.ERROR("On input of image", err);
           });
 
@@ -266,6 +266,7 @@ async function Main() {
     tilergatis_zip.VerifyVendorAndProductID(vendor_id, product_id);
   }
 
+  return;
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));
 
