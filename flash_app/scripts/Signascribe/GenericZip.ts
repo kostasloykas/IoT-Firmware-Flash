@@ -30,6 +30,10 @@ export class GenericZip {
       // I guess that zip is from nordic
       let zip: NRFZIP = new NRFZIP(new Uint8Array(this.zip_file.toBuffer()));
 
+      // FIXME: just for check if it is nrf zip
+
+      // FIXME: try catch erro
+
       // return only zip file
       return [null, zip];
     }
