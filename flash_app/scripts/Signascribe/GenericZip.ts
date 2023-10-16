@@ -25,14 +25,13 @@ export class GenericZip {
       // return tilergatis zip and image
       return [zip1, zip2];
     } else {
-      PRINT("Zip file is not from Tilergatis");
-
       // I guess that zip is from nordic
       let zip: NRFZIP = new NRFZIP(new Uint8Array(this.zip_file.toBuffer()));
 
       // FIXME: just for check if it is nrf zip
-
-      // FIXME: try catch erro
+      await zip.ExtractFirmwareAndInitPacket().catch((err) => {
+        ERROR("Unsupported zip file");
+      });
 
       // return only zip file
       return [null, zip];
