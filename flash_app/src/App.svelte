@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </div>
   <div class="d-flex justify-content-center m-5">
-    <div class=" col-sm-5 text-center border border-success border-3 rounded-3 p-3">
+    <div class=" col-sm-5 text-center border border-5 rounded-3 p-3">
       <span class="h2 fw-bold">Upload File</span>
       <input type="file" id="image" class="form-control w-50 m-auto mt-3" accept=".hex , .bin, .zip" />
       <div class="progress mt-3 w-50 m-auto" role="progressbar" aria-valuemin="0" aria-valuemax="100">

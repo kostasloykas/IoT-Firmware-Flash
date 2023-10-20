@@ -28,7 +28,7 @@ export class GenericZip {
       // I guess that zip is from nordic
       let zip: NRFZIP = new NRFZIP(new Uint8Array(this.zip_file.toBuffer()));
 
-      // FIXME: just for check if it is nrf zip
+      // Just for check if it is nrf zip
       await zip.ExtractFirmwareAndInitPacket().catch((err) => {
         ERROR("Unsupported zip file");
       });

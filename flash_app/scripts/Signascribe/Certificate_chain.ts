@@ -21,7 +21,7 @@ export class CertificateChain {
     // get intermediate certificates
     this.intermediate_certificates = this.GetIntermediateCertificates(certificates);
 
-    // // get common name
+    // get common name
     this.common_name = this.owner_certificate.subject.attributes[0].value as string;
 
     assert(this.owner_certificate != null, "Owner certificate must be != null");
@@ -51,7 +51,6 @@ export class CertificateChain {
       .get("/certificates/local_certificates.pem")
       .then((response) => {
         local_certificates = response.data;
-        DEBUG(local_certificates);
       })
       .catch((err) => {
         ERROR(`Error  fetching local certificates data:`, err);
@@ -111,7 +110,6 @@ export class CertificateChain {
       });
 
     assert(ca_store != null, "CA Store must be != null");
-    DEBUG(ca_store.listAllCertificates().length);
 
     // verify intermediate certificates
     this.VerifyIntermediateCertificates(this.intermediate_certificates, ca_store);

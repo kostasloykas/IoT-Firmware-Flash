@@ -261,10 +261,8 @@ async function Main() {
   // must be inside the supported vendors and products id
   const [vendor_id, product_id] = GetVendorAndProductId(port, api_used);
 
-  // FIXME: verify if vendor and product id is in manifest file of tilergatis zip
-  if (tilergatis_zip != null) {
-    tilergatis_zip.VerifyVendorAndProductID(vendor_id, product_id);
-  }
+  // verify if vendor and product id is in manifest file of tilergatis zip
+  if (tilergatis_zip != null) tilergatis_zip.VerifyVendorAndProductID(vendor_id, product_id);
 
   let device_type: lib.Device = new lib.Device(vendor_id, product_id);
   lib.PRINT("Vendor and Product ID:", vendor_id.toString(16), product_id.toString(16));

@@ -26,6 +26,12 @@ export class TilergatisZip {
           this.firmware_bytes = bytes;
           break;
 
+        case "firmware.bin":
+          // bin file
+          this.firmware = new FirmwareFile(bytes, "Uint8Array");
+          this.firmware_bytes = bytes;
+          break;
+
         case "firmware.zip":
           // NRF zip file
           this.firmware = new NRFZIP(bytes);
