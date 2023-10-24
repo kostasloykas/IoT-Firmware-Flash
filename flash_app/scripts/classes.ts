@@ -38,22 +38,23 @@ export class FirmwareFile {
   //we have 2 constructors
   constructor(input_element: HTMLInputElement, type: string);
   constructor(bytes: Uint8Array, type: string);
+  constructor(hexdata: string, type: string);
   constructor(...param: any[]) {
     assert(param.length == 2, "Constructor accepts only two parameters");
     let type: string = param[1];
     let input_element: HTMLInputElement = param[0];
     let bytes: Uint8Array = param[0];
-    DEBUG(param[0]);
+    let hexdata: string = param[0];
 
     // HTMLInputElement constructor
     if (type == "HTMLInputElement") this.constructorInputElement(input_element);
     // Uint8Array constructor
     else if (type == "Uint8Array") this.constructorUint8Array(bytes);
+    else if (type == "Hex") this.constructorHex(hexdata);
     else assert(0, "Unrecognized type");
   }
 
   public constructorInputElement(input_element: HTMLInputElement) {
-    DEBUG(input_element.files);
     CheckFileExtention(input_element.files[0].name);
     this.ConvertFirmwareToBytes(input_element)
       .then(([bytes, hexdata]) => {
@@ -65,6 +66,26 @@ export class FirmwareFile {
       .catch((err) => {
         ERROR("ConvertFirmwareToBytes", err);
       });
+  }
+
+  //FIXME: constructorHex
+  public constructorHex(data: string): Uint8Array {
+    let hexdata: string = data;
+
+    let memMap: MemoryMap = MemoryMap.fromHex(hexdata); //convert hexdata to binary
+    let bytes: Uint8Array = new Uint8Array();
+
+    // add padding
+    bytes = ConvertBinaryToUint8Array(bytes, memMap);
+
+    this.firmware_bytes = bytes;
+    this.firmware_bytes_hex = hexdata;
+    this.size = this.firmware_bytes.length;
+    this.CalculateCRC32();
+
+    assert(bytes.length != 0, "Bytes length must be != 0");
+
+    return bytes;
   }
 
   public constructorUint8Array(bytes: Uint8Array) {
@@ -111,21 +132,6 @@ export class FirmwareFile {
         reader.readAsArrayBuffer(file);
       } else ERROR("unknown type of input file");
     });
-  }
-
-  // FIXME: ConvertToHex
-  public static ConvertToHex(data: Uint8Array): Uint8Array {
-    let hexdata: string = data.toString();
-
-    let memMap: MemoryMap = MemoryMap.fromHex(hexdata); //convert hexdata to binary
-    let bytes: Uint8Array = new Uint8Array();
-
-    // add padding
-    bytes = ConvertBinaryToUint8Array(bytes, memMap);
-
-    assert(bytes.length != 0, "Bytes length must be != 0");
-
-    return bytes;
   }
 
   private CalculateCRC32() {

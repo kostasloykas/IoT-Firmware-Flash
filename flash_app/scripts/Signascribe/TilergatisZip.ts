@@ -24,7 +24,7 @@ export class TilergatisZip {
       switch (name) {
         case "firmware.hex":
           // hex file
-          this.firmware = new FirmwareFile(FirmwareFile.ConvertToHex(bytes), "Uint8Array");
+          this.firmware = new FirmwareFile(bytes.toString(), "Hex");
           this.firmware_bytes = bytes;
           break;
 

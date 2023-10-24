@@ -209,10 +209,11 @@ window.addEventListener("load", function () {
 
       // seperate zip,hex,bin files
       let extention = path.split(".").pop();
-      if (extention == "bin" || extention == "hex")
+      lib.DEBUG(extention);
+      if (extention == "bin" || extention == "hex") {
         image = new lib.FirmwareFile(input_element, "HTMLInputElement");
-      // zip file upload
-      else if (extention == "zip") {
+        // zip file upload
+      } else if (extention == "zip") {
         [tilergatis_zip, image] = await new GenericZip().ReturnTilergatisZipAndImage(input_element);
 
         if (tilergatis_zip != null)
@@ -221,7 +222,7 @@ window.addEventListener("load", function () {
           });
 
         if (image == null) lib.ERROR("Something went wrong with image");
-      } else lib.assert(0, "unrecognized extention");
+      } else lib.ERROR("unsupported extention");
 
       Alert("Image uploaded successfully", "success");
       image_selected = true;
