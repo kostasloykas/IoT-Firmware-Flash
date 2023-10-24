@@ -43,6 +43,7 @@ export class FirmwareFile {
     let type: string = param[1];
     let input_element: HTMLInputElement = param[0];
     let bytes: Uint8Array = param[0];
+    DEBUG(param[0]);
 
     // HTMLInputElement constructor
     if (type == "HTMLInputElement") this.constructorInputElement(input_element);
@@ -52,6 +53,7 @@ export class FirmwareFile {
   }
 
   public constructorInputElement(input_element: HTMLInputElement) {
+    DEBUG(input_element.files);
     CheckFileExtention(input_element.files[0].name);
     this.ConvertFirmwareToBytes(input_element)
       .then(([bytes, hexdata]) => {
@@ -109,6 +111,21 @@ export class FirmwareFile {
         reader.readAsArrayBuffer(file);
       } else ERROR("unknown type of input file");
     });
+  }
+
+  // FIXME: ConvertToHex
+  public static ConvertToHex(data: Uint8Array): Uint8Array {
+    let hexdata: string = data.toString();
+
+    let memMap: MemoryMap = MemoryMap.fromHex(hexdata); //convert hexdata to binary
+    let bytes: Uint8Array = new Uint8Array();
+
+    // add padding
+    bytes = ConvertBinaryToUint8Array(bytes, memMap);
+
+    assert(bytes.length != 0, "Bytes length must be != 0");
+
+    return bytes;
   }
 
   private CalculateCRC32() {

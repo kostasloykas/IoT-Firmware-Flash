@@ -4,6 +4,8 @@ import { PRINT, FirmwareFile, NRFZIP, ERROR, assert, DEBUG } from "../classes";
 import { ManifestJSON } from "./ManifestJSON";
 import { CertificateChain } from "./Certificate_chain";
 import { Buffer } from "buffer";
+import { idText } from "typescript";
+import { urlToHttpOptions } from "url";
 
 export class TilergatisZip {
   private firmware: NRFZIP | FirmwareFile = null;
@@ -22,7 +24,7 @@ export class TilergatisZip {
       switch (name) {
         case "firmware.hex":
           // hex file
-          this.firmware = new FirmwareFile(bytes, "Uint8Array");
+          this.firmware = new FirmwareFile(FirmwareFile.ConvertToHex(bytes), "Uint8Array");
           this.firmware_bytes = bytes;
           break;
 
@@ -121,12 +123,20 @@ export class TilergatisZip {
 
   // VerifyFirmwareProperties
   private async VerifyFirmwareProperties() {
-    if (this.Firmware.Size != this.firmware_bytes.length) ERROR("Firmware size is different from json file");
+    if (this.manifest_json.FirmwareSize != this.firmware_bytes.length)
+      ERROR("Firmware size is different from json file");
   }
 
   public VerifyVendorAndProductID(vendor_id: number, product_id: number) {
     let json_vendor: number = this.manifest_json.VendorId;
     let json_product: number = this.manifest_json.ProductId;
+
+    // make it pass nrf dongle
+    if (json_vendor == 0x1915)
+      if (json_product == 0x521f || json_product == 0x520f)
+        if (product_id != 0x521f && product_id != 0x520f)
+          ERROR("Device's Product ID is different from json file");
+        else return;
 
     if (vendor_id != json_vendor) ERROR("Device's Vendor ID is different from json file");
     if (product_id != json_product) ERROR("Device's Product ID is different from json file");
