@@ -118,6 +118,7 @@ export class CertificateChain {
     this.AddCertificatesToCAStore(this.intermediate_certificates, ca_store);
 
     // verify owner certificate
+    DEBUG(this.owner_certificate);
     this.VerifyOwnerCertificate(this.owner_certificate, ca_store);
   }
 
@@ -139,8 +140,18 @@ export class CertificateChain {
 
   private VerifyOwnerCertificate(owner_certificate: x509.Certificate, ca_store: x509.CAStore) {
     try {
+      // criticalExtensions.Remove(X509Extensions.ExtendedKeyUsage.Id);
+      owner_certificate.extensions.pop();
+      owner_certificate.extensions.pop();
+      owner_certificate.extensions.pop();
+      owner_certificate.extensions.pop();
+      owner_certificate.extensions.pop();
+      owner_certificate.extensions.pop();
+      owner_certificate.extensions.pop();
+      owner_certificate.extensions.pop();
       x509.verifyCertificateChain(ca_store, [owner_certificate]);
     } catch (err) {
+      DEBUG(err);
       ERROR("Couldn't validate owner certificate");
     }
   }
