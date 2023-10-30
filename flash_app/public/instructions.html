@@ -19,7 +19,7 @@
                         sudo usermod -aG dialout <user>
                         sudo nano /etc/udev/rules.d/99-slusb.rules and append this command ' SUBSYSTEM=="usb", MODE="0666", GROUP="dialout" '
                     </li>
-                    <li>Run google chrome as root: $google-chrome --user-data-dir --test-type --no-sandbox</li>
+                    <li>Run google chrome as root: $sudo google-chrome --user-data-dir --test-type --no-sandbox</li>
                 </h3>
             </ol>
             

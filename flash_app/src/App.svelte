@@ -29,5 +29,9 @@
     <textarea class="form-control w-50 m-auto" id="console_div" rows="10" readonly style="resize: none;" />
   </div>
 
+  <div class="mt-5 text-center">
+    <a href="./instructions.html" target="_blank">Application Instructions</a>
+  </div>
+
   <button type="button" id="picker" hidden>Download</button>
 </main>
