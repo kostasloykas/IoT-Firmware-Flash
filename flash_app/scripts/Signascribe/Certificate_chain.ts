@@ -140,15 +140,7 @@ export class CertificateChain {
 
   private VerifyOwnerCertificate(owner_certificate: x509.Certificate, ca_store: x509.CAStore) {
     try {
-      // criticalExtensions.Remove(X509Extensions.ExtendedKeyUsage.Id);
-      owner_certificate.extensions.pop();
-      owner_certificate.extensions.pop();
-      owner_certificate.extensions.pop();
-      owner_certificate.extensions.pop();
-      owner_certificate.extensions.pop();
-      owner_certificate.extensions.pop();
-      owner_certificate.extensions.pop();
-      owner_certificate.extensions.pop();
+      owner_certificate.setExtensions([]);
       x509.verifyCertificateChain(ca_store, [owner_certificate]);
     } catch (err) {
       DEBUG(err);
