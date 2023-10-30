@@ -7,13 +7,7 @@ Prerequirements for Linux:
    sudo nano /etc/udev/rules.d/99-slusb.rules and append this command ' SUBSYSTEM=="usb", MODE="0666", GROUP="dialout" '
 
 3. Run google chrome as root
-   sudo nano /opt/google/chrome/google-chrome
-   Replace at the end of file
-   exec -a "$0" "$HERE/chrome" "$@"
-   with
-   exec -a "$0" "$HERE/chrome" "$@" --user-data-dir --test-type --no-sandbox
-
-   or run command $google-chrome --user-data-dir --test-type --no-sandbox
+   run command $google-chrome --user-data-dir --test-type --no-sandbox
 
 Prerequirements for Windows:
 

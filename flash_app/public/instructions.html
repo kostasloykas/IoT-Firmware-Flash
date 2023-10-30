@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+    <title>Instructions</title>
+    </head>
+
+
+    <body>
+        <div>
+            <h1>
+            Instructions for Linux:
+            </h1>
+            <ol type="1"> 
+
+                <h3>
+                    <li>The user must grant read and write access to the right port (e.g sudo chmod 666 /dev/ttyUSB0)</li>
+                    <li>USB permmissions  
+                        sudo usermod -aG dialout <user>
+                        sudo nano /etc/udev/rules.d/99-slusb.rules and append this command ' SUBSYSTEM=="usb", MODE="0666", GROUP="dialout" '
+                    </li>
+                    <li>Run google chrome as root: $google-chrome --user-data-dir --test-type --no-sandbox</li>
+                </h3>
+            </ol>
+            
+        </div>
+
+    </body>
+</html>
