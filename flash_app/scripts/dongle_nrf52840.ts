@@ -146,7 +146,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
     this.port = port;
 
     // check if image is compatible with this device
-    CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
+    // CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
 
     // trigger bootloader if needs
     if (this.needs_to_trigger_bootloader) {
