@@ -4,7 +4,6 @@ import * as lib from "./classes";
 import { CC2538 } from "./cc2538";
 import { NRF_DONGLE } from "./dongle_nrf52840";
 import { NRF_DK } from "./DK_nrf52840";
-import { ARDUINO_MICRO } from "./arduino_micro";
 import * as usb from "./web_usb";
 import { GenericZip } from "./Signascribe/GenericZip";
 import { TilergatisZip } from "./Signascribe/TilergatisZip";
