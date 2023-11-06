@@ -1,12 +1,4 @@
-import {
-  CheckIfImageIsCompatibleForThisDevice,
-  DEBUG,
-  ERROR,
-  FirmwareFile,
-  PRINT,
-  UpdateProgressBar,
-  assert,
-} from "./classes";
+import { DEBUG, ERROR, FirmwareFile, PRINT, UpdateProgressBar, assert } from "./classes";
 
 declare global {
   interface Window {
@@ -19,8 +11,6 @@ export class NRF_DK {
   reader: any = null;
 
   public async FlashFirmware(usb: any, image: FirmwareFile) {
-    CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
-
     UpdateProgressBar("30%");
 
     // save file into device

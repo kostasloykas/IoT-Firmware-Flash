@@ -1,14 +1,4 @@
-import {
-  DEBUG,
-  FirmwareFile,
-  CheckIfImageIsCompatibleForThisDevice,
-  PRINT,
-  UpdateProgressBar,
-  ERROR,
-  Packet,
-  assert,
-  NRFZIP,
-} from "./classes";
+import { DEBUG, FirmwareFile, PRINT, UpdateProgressBar, ERROR, Packet, assert, NRFZIP } from "./classes";
 import crc32 from "crc-32";
 import { Buffer } from "buffer";
 import { NRF_DONGLE_Interface } from "./interfaces";
@@ -144,9 +134,6 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
     PRINT("Files extracted");
 
     this.port = port;
-
-    // check if image is compatible with this device
-    // CheckIfImageIsCompatibleForThisDevice(["nRF"], image);
 
     // trigger bootloader if needs
     if (this.needs_to_trigger_bootloader) {

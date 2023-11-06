@@ -1,15 +1,4 @@
-import {
-  ACK,
-  DEBUG,
-  ERROR,
-  FirmwareFile,
-  NACK,
-  PRINT,
-  Packet,
-  assert,
-  UpdateProgressBar,
-  CheckIfImageIsCompatibleForThisDevice,
-} from "./classes";
+import { ACK, DEBUG, ERROR, FirmwareFile, NACK, PRINT, Packet, assert, UpdateProgressBar } from "./classes";
 
 import { Command } from "./interfaces";
 
@@ -91,9 +80,6 @@ export class CC2538 implements Command {
     this.port = port;
     this.encoder = new Encoder();
     this.decoder = new Decoder();
-
-    // check if image is compatible with this device
-    CheckIfImageIsCompatibleForThisDevice(["cc2538", "zoul", "zolertia"], image);
 
     // Open port
     PRINT("Try to open the port");

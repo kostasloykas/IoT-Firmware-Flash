@@ -284,24 +284,6 @@ export function assert(condition: unknown, msg: string): asserts condition {
   if (condition === false) throw new Error("Assertion: " + msg);
 }
 
-// CheckIfImageIsValidForThisDevice
-export function CheckIfImageIsCompatibleForThisDevice(devices: string[], image: FirmwareFile) {
-  const decoder: TextDecoder = new TextDecoder("utf-8");
-  //take only numbers and letters
-  const text: string = decoder.decode(
-    image.FirmwareBytes.filter(
-      (value, i, arr) =>
-        (arr[i] >= 65 && arr[i] <= 90) || (arr[i] >= 48 && arr[i] <= 57) || (arr[i] >= 97 && arr[i] <= 122)
-    )
-  );
-
-  for (const device_name of devices) {
-    if (text.toLowerCase().includes(device_name.toLowerCase())) return;
-  }
-  // if image doesn't include any keyword
-  ERROR("This image is not compatible with this device");
-}
-
 function ConvertBinaryToUint8Array(bytes: Uint8Array, memMap: MemoryMap): Uint8Array {
   // iterator
   let iterator: IterableIterator<number> = memMap.keys() as IterableIterator<number>;
