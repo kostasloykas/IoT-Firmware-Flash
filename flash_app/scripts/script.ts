@@ -209,7 +209,6 @@ window.addEventListener("load", function () {
 
       // seperate zip,hex,bin files
       let extention = path.split(".").pop();
-      lib.DEBUG(extention);
       if (extention == "bin" || extention == "hex") {
         image = new lib.FirmwareFile(input_element, "HTMLInputElement");
         // zip file upload

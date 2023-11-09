@@ -238,7 +238,6 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
 
   async GetDfuInterfaceNumber(device: any): Promise<number> {
     const interfaces = device.configuration.interfaces;
-    DEBUG(interfaces);
 
     if (device.configuration == null) return null;
 
