@@ -33,5 +33,9 @@
     <a href="./instructions.html" target="_blank">Application Instructions</a>
   </div>
 
+  <div class="text-center">
+    <a href="./supported_devices.html" target="_blank">Supported Devices</a>
+  </div>
+
   <button type="button" id="picker" hidden>Download</button>
 </main>

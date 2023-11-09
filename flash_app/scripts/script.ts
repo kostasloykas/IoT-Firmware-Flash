@@ -19,6 +19,7 @@ let SUPPORTED_SERIAL_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x10c4, 0xea60), new CC2538()], // zolertia
   [new lib.Device(0x1915, 0x521f), new NRF_DONGLE(false)], // nrf52840 dongle bootloader
   [new lib.Device(0x1915, 0x520f), new NRF_DONGLE(true)], // nrf52840 dongle bootloader if needs to trigger bootloader
+  [new lib.Device(0x2fe3, 0x0100), new NRF_DONGLE(true)], // nrf52840 dongle with Zephyr firmware
   [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-b
   [new lib.Device(0x1366, 0x1015), new NRF_DK()], // nrf52840 DK
   // [new lib.Device(0x2341, 0x8037), new ARDUINO_MICRO()], // Arduino Micro
@@ -260,6 +261,9 @@ async function Main() {
   // check the vendor id and product id of device
   // must be inside the supported vendors and products id
   const [vendor_id, product_id] = GetVendorAndProductId(port, api_used);
+
+  // nrf dongle has zephyr os installed and needs to get in bootloader mode by hand
+  if (vendor_id == 0x2fe3 && product_id == 0x0100) lib.ERROR("Please initiate the bootloader manually!");
 
   // verify if vendor and product id is in manifest file of tilergatis zip
   if (tilergatis_zip != null) tilergatis_zip.VerifyVendorAndProductID(vendor_id, product_id);

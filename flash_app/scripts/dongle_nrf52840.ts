@@ -142,11 +142,19 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
         .then((result) => {
           PRINT("Bootloader Triggered");
         })
-        .catch((err) => {});
+        .catch((err) => {
+          ERROR(err);
+        });
 
       PRINT("Now i want again serial access to the device in order to start flashing");
+
+      // FIXME: create a button and request access to port of device
+      // createTemporaryRequestPortButton
+      // click
+
       const usbVendorId: number = 0x1915;
       const usbProductId: number = 0x521f;
+
       await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then((port_: any) => {
         this.port = port_;
       });
@@ -216,6 +224,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
 
   async GetDfuInterfaceNumber(device: any): Promise<number> {
     const interfaces = device.configuration.interfaces;
+    DEBUG(interfaces);
 
     if (device.configuration == null) return null;
 
@@ -273,13 +282,13 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
     };
 
     // send request to trigger bootloader
-    await device.controlTransferOut(setup, arr).catch((err: any) => ERROR("TriggerBootloader", err));
+    await device.controlTransferOut(setup, arr).catch((err: any) => {});
 
-    // release interface
-    await device.releaseInterface(interface_number);
+    // // release interface
+    // await device.releaseInterface(interface_number);
 
-    // close port
-    await device.close();
+    // // close port
+    // await device.close();
   }
 
   // TransferFirmware
