@@ -4,6 +4,22 @@ import { Buffer } from "buffer";
 import { NRF_DONGLE_Interface } from "./interfaces";
 import * as usb from "./web_usb";
 
+let global_port = null;
+window.addEventListener("load", function () {
+  document.getElementById("connectButton").addEventListener("click", async () => {
+    try {
+      const usbVendorId: number = 0x1915;
+      const usbProductId: number = 0x521f;
+      await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then((port_: any) => {
+        global_port = port_;
+      });
+      // Do something with the port
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  });
+});
+
 // operation code
 enum OP_CODE {
   ProtocolVersion = 0x00,
@@ -126,6 +142,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
   }
 
   public async FlashFirmware(port: any, zip_file: NRFZIP) {
+    global_port = null;
     let init_packet: Uint8Array;
     let image: FirmwareFile;
 
@@ -146,18 +163,15 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
           ERROR(err);
         });
 
-      PRINT("Now i want again serial access to the device in order to start flashing");
+      PRINT("It needs serial access to the device in order to start flashing");
 
-      // FIXME: create a button and request access to port of device
-      // createTemporaryRequestPortButton
-      // click
+      // request again access to port
+      document.getElementById("connectButton").click();
 
-      const usbVendorId: number = 0x1915;
-      const usbProductId: number = 0x521f;
+      // FIXME: wait until port
+      while (global_port == null) await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then((port_: any) => {
-        this.port = port_;
-      });
+      this.port = global_port;
     }
 
     // Open port

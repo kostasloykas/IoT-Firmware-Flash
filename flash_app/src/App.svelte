@@ -38,4 +38,6 @@
   </div>
 
   <button type="button" id="picker" hidden>Download</button>
+
+  <button type="button" id="connectButton" hidden />
 </main>
