@@ -40,7 +40,6 @@
     <textarea class="form-control w-50 m-auto" id="console_div" rows="10" readonly style="resize: none;" />
   </div>
 
-  <!-- FIXME: write the description -->
   <div class="mt-5 w-50 m-auto">
     <h2 style="text-align: center;">Description:</h2>
     ASTEROID is a web-based application that contributes to the advancement of IoT device management by providing
