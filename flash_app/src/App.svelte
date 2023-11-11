@@ -1,6 +1,4 @@
 <script>
-  //bind:files enable to access and manipulate
-  //the selected files in your Svelte component.
   import * as script from "../scripts/script";
 </script>
 
@@ -42,21 +40,20 @@
     <textarea class="form-control w-50 m-auto" id="console_div" rows="10" readonly style="resize: none;" />
   </div>
 
-  <div class="mt-5 text-center w-50 m-auto">
-    <h2>Description:</h2>
-    The system is designed to interface with popular embedded operating systems such as Contiki and Zephyr, leveraging
-    their bootloader functionalities for seamless firmware deployment. Through a user-friendly web interface, device
-    administrators can effortlessly initiate the update process, ensuring minimal disruption to device operations.
-  </div>
-
   <!-- FIXME: write the description -->
-  <div class="mt-5 text-center">
-    <a href="./instructions.html" target="_blank">Application Instructions</a>
+  <div class="mt-5 w-50 m-auto">
+    <h2 style="text-align: center;">Description:</h2>
+    ASTEROID is a web-based application that contributes to the advancement of IoT device management by providing
+    a practical solution for firmware updates. The system is designed to interface with popular embedded operating
+    systems such as Contiki-NG and Zephyr OS's, leveraging their bootloader functionalities of device for firmware
+    deployment. Through a user-friendly web interface, device administrators can effortlessly initiate the update
+    process by selecting the target IoT device and specifying the firmware to be flashed in memory.For your convenience,
+    you can check the current list of
+    <a href="./supported_devices.html" target="_blank">Supported Devices</a> and the
+    <a href="./instructions.html" target="_blank">Application Instructions</a>.
   </div>
 
-  <div class="text-center">
-    <a href="./supported_devices.html" target="_blank">Supported Devices</a>
-  </div>
+  <div style="padding:50px;" />
 
   <!-- hidden buttons -->
   <button type="button" id="picker" hidden>Download</button>
