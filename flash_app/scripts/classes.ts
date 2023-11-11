@@ -68,7 +68,6 @@ export class FirmwareFile {
       });
   }
 
-  //FIXME: constructorHex
   public constructorHex(data: string): Uint8Array {
     let hexdata: string = data;
 

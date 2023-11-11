@@ -168,7 +168,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
       // request again access to port
       document.getElementById("connectButton").click();
 
-      // FIXME: wait until port
+      // wait until port is initialized
       while (global_port == null) await new Promise((resolve) => setTimeout(resolve, 1000));
 
       this.port = global_port;
