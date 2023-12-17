@@ -17,7 +17,7 @@
     style="font-family:'Audiowide', sans-serif;   font-size: 100px;
   "
   >
-    ASTEROID
+    Flash+
   </h1>
 
   <div class="d-flex justify-content-center m-5">
@@ -42,7 +42,7 @@
 
   <div class="mt-5 w-50 m-auto">
     <h2 style="text-align: center;">Description:</h2>
-    ASTEROID is a web-based application that contributes to the advancement of IoT device management by providing
+    Flash+ is a web-based application that contributes to the advancement of IoT device management by providing
     a practical solution for firmware updates. The system is designed to interface with popular embedded operating
     systems such as Contiki-NG and Zephyr OS's, leveraging their bootloader functionalities of device for firmware
     deployment. Through a user-friendly web interface, device administrators can effortlessly initiate the update
@@ -56,5 +56,7 @@
 
   <!-- hidden buttons -->
   <button type="button" id="picker" hidden>Download</button>
+
+  <!-- connect button -->
   <button type="button" id="connectButton" hidden />
 </main>

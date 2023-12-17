@@ -22,7 +22,6 @@ let SUPPORTED_SERIAL_DEVICES: Map<lib.Device, any> = new Map<lib.Device, any>([
   [new lib.Device(0x2fe3, 0x0100), new NRF_DONGLE(true)], // nrf52840 dongle with Zephyr firmware
   [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-b
   [new lib.Device(0x1366, 0x1015), new NRF_DK()], // nrf52840 DK
-  // [new lib.Device(0x2341, 0x8037), new ARDUINO_MICRO()], // Arduino Micro
   // [new lib.Device(0x403, 0x6010), new CC2538()], // openmote-cc2538
 ]);
 
