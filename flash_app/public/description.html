@@ -1,0 +1,132 @@
+<html>
+
+
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Kenia&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Audiowide" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+</head>
+
+<style>
+    *{
+        font-family: Fredoka;
+    }
+
+</style>
+
+<body>
+    
+    <div class="w-100 h-100" style="background-image: url(./images/436118.jpg); background-size: cover;  background-attachment: fixed;">
+    
+    <h2 class="text-white text-center" style="font-family:'Audiowide', sans-serif; font-size: 100px;">Flash+</h2>
+    
+    <p class="text-white w-50 m-auto" >
+        Flash+ is a web-based application that contributes to the advancement of IoT device management by providing
+        a practical solution for firmware updates. The system is designed to interface with popular embedded operating
+        systems such as Contiki-NG and Zephyr OS's, leveraging their bootloader functionalities of device for firmware
+        deployment. Through a user-friendly web interface, device administrators can effortlessly initiate the update
+        process by selecting the target IoT device and specifying the firmware to be flashed in memory.
+        Flash+ offers a secure firmware installation process leveraging the Signascribe script, an implementation
+        developed by us. This script empowers users to create customized firmwares with integrated security features,
+        including signature verification and certificate chain validation, ensuring a secure and trustworthy flashing process.
+
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col">
+                <div id="supported_devices" class=" text-center text-white w-100">
+                    <h1>Supported Devices</h1>
+                    <div id="carouselExampleDark" class="carousel carousel-white slide w-75 m-auto" data-bs-ride="carousel">
+                        <div class="carousel-indicators">
+                            <button type="button" data-bs-target="#carouselExampleDark" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                            <button type="button" data-bs-target="#carouselExampleDark" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                            <button type="button" data-bs-target="#carouselExampleDark" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                            <button type="button" data-bs-target="#carouselExampleDark" data-bs-slide-to="3" aria-label="Slide 4"></button>
+                        </div>
+                        <div class="carousel-inner">
+                            <div class="carousel-item active" data-bs-interval="4000">
+                            <img src="./images/devices/zolertia.png" class="d-block w-100" height="300" alt="...">
+                            <div class="carousel-caption d-none d-md-block">
+                                <h5>Zolertia CC2538</h5>
+                            </div>
+                            </div>
+                            <div class="carousel-item" data-bs-interval="4000">
+                            <img src="./images/devices/openmote-b.png" class="d-block w-100" height="300" alt="...">
+                            <div class="carousel-caption d-none d-md-block">
+                                <h5>Openmote-b</h5>
+                            </div>
+                            </div>
+                            <div class="carousel-item">
+                            <img src="./images/devices/nrf52840_dongle.png" class="d-block w-100" height="300" alt="...">
+                            <div class="carousel-caption d-none d-md-block">
+                                <h5>nRF 52840 Dongle</h5>
+                            </div>
+                            </div>
+                            <div class="carousel-item">
+                            <img src="./images/devices/nrf52840_DK.png" class="d-block w-100" height="300" alt="...">
+                            <div class="carousel-caption d-none d-md-block">
+                                <h5>nRF 52840 Development Kit</h5>
+                            </div>
+                            </div>
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleDark" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleDark" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>        
+            
+                </div>
+            </div>
+            <div class="col-6">
+                <div id="instructions" class="text-white position-relative">
+                    <h3>Instructions for Linux:</h3>
+                    <ol type="1"> 
+                        <p>
+                            <li>The user must grant read and write access to the right port (e.g sudo chmod 666 /dev/ttyUSB0)</li>
+                            <li>USB permmissions:
+                                <div>$sudo usermod -aG dialout <user></div>
+                                <div>$sudo nano /etc/udev/rules.d/99-slusb.rules and append this command ' SUBSYSTEM=="usb", MODE="0666", GROUP="dialout" '</div>
+                            </li>
+                            <li>Run google chrome as root: $sudo google-chrome --user-data-dir --test-type --no-sandbox</li>
+                        </p>
+                    </ol>
+        
+                    <h3>Instructions for Windows:</h3>
+        
+                    <ol type="1">
+                        <p>
+                            <li>Install the device's drivers if they are required.</li>
+                            <li>Run chrome as administrator.</li>
+                        </p>
+                    </ol>
+                </div>
+            </div>
+      </div>
+    </div>
+
+    <div class="text-center m-5">
+        <button onclick="location.href='./index.html'" type="button" class="btn btn-light p-3">Launch Flash+ Application</button>
+    </div>
+
+
+
+    
+    
+    
+    
+    
+</body>
+
+
+
+</html>

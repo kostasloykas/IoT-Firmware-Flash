@@ -51,11 +51,17 @@ function ClearConsole() {
 }
 
 // update page
-function UpdatePage(release_flash_button: boolean = true, clear_console: boolean = true) {
+function UpdatePage(
+  release_flash_button: boolean = true,
+  clear_console: boolean = true,
+  clear_progress_bar: boolean = false
+) {
   if (release_flash_button) ReleaseFlashButton();
   else DisableFlashButton();
 
   if (clear_console) ClearConsole();
+
+  if (clear_progress_bar) lib.UpdateProgressBar("0");
 }
 
 function ReleaseFlashButton(): void {
@@ -276,6 +282,6 @@ async function Main() {
   await device.FlashFirmware(port, image);
 
   Alert("The process finished successfully", "success");
-  UpdatePage(true, false); // update page after flashing
+  UpdatePage(true, false, true); // update page after flashing
   return;
 }

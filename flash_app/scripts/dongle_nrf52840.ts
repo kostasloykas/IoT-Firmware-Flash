@@ -165,11 +165,15 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
 
       PRINT("It needs serial access to the device in order to start flashing");
 
+      // FIXME: Just terminate the process and alert a message to the user to start again the flash process
+
       // request again access to port
       document.getElementById("connectButton").click();
 
       // wait until port is initialized
-      while (global_port == null) await new Promise((resolve) => setTimeout(resolve, 1000));
+      while (global_port == null) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
 
       this.port = global_port;
     }
@@ -202,7 +206,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
       .then(() => PRINT("Receipt Notification set successfully"))
       .catch((err) => ERROR("SetReceiptNotification", err));
 
-    UpdateProgressBar("20%");
+    UpdateProgressBar("30%");
 
     //Transfer Init Packet
     PRINT("Try to transfer Init Packet");
@@ -212,14 +216,13 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
       })
       .catch((err) => ERROR("TransferInitPacket", err));
 
-    UpdateProgressBar("40%");
+    UpdateProgressBar("70%");
 
     //Transfer Firmware
     PRINT("Try to transfer Firmware");
     await this.TransferFirmware(image.FirmwareBytes)
       .then(() => PRINT("Firmware transferred successfully"))
       .catch((err) => ERROR("TransferFirmware", err));
-    UpdateProgressBar("90%");
 
     await this.ClosePort()
       .then(() => PRINT("Port closed successfully"))
@@ -297,7 +300,7 @@ export class NRF_DONGLE implements NRF_DONGLE_Interface {
     // send request to trigger bootloader
     await device.controlTransferOut(setup, arr).catch((err: any) => {});
 
-    // // release interface
+    // release interface
     // await device.releaseInterface(interface_number);
 
     // // close port
