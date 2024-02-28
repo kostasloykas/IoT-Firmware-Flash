@@ -1,5 +1,6 @@
 <html>
 
+<title>Flash+</title>
 
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -105,7 +106,20 @@
         
                     <ol type="1">
                         <p>
-                            <li>Install the device's drivers if they are required.</li>
+                            <li>Install the device's drivers if they are required.
+                                For cc2538 devices use
+                                <style>
+                                    a{
+                                        color: red !important;
+                                    }
+                                    a:hover{
+                                        color: wheat !important;
+                                    }
+                                </style>
+                                <a href="https://www.iobit.com/en/driver-booster.php" target="_blank" >Driver Booster</a>
+                                and for nRF 52840 use
+                                <a href="https://zadig.akeo.ie/" target="_blank">Zadig</a>.
+                            </li>
                             <li>Run chrome as administrator.</li>
                         </p>
                     </ol>
@@ -114,6 +128,7 @@
       </div>
     </div>
 
+    
     <div class="text-center m-5">
         <button onclick="location.href='./index.html'" type="button" class="btn btn-light p-3">Launch Flash+ Application</button>
     </div>
